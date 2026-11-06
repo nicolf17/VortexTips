@@ -142,7 +142,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                 </span>
 
                 {/* Pin Icon */}
-                <Pin className="w-3.5 h-3.5 text-violet-400 rotate-45 shrink-0 hidden sm:inline" />
+                <Pin className="w-3.5 h-3.5 text-slate-400 rotate-45 shrink-0 hidden sm:inline" />
               </div>
 
               {/* Right side: Clasificación link & Collapse Chevron */}
@@ -238,8 +238,8 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                         {/* Kickoff Time (12h Colombia AM/PM) or Live Status */}
                         <div className="w-16 sm:w-20 shrink-0 text-left">
                           {isLive ? (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-purple-300 bg-purple-950/80 border border-purple-700/60 px-1.5 py-0.5 rounded animate-pulse">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-800/50 px-1.5 py-0.5 rounded animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                               <span>{match.minute ? `${match.minute}'` : 'VIVO'}</span>
                             </span>
                           ) : isFinished ? (
@@ -356,8 +356,8 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                           className="bg-[#141d2e] border border-slate-750 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title="Ambos Equipos Anotan (AA: Sí)"
                         >
-                          <span className="text-[10px] text-violet-400 font-sans font-bold">AA</span>
-                          <span className="font-bold text-violet-200">{aaAvg}</span>
+                          <span className="text-[10px] text-slate-400 font-sans font-bold">AA</span>
+                          <span className="font-bold text-slate-200">{aaAvg}</span>
                         </div>
 
                         {/* Corners (+8.5c) Box */}
@@ -376,10 +376,10 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                             e.stopPropagation();
                             onOpenAnalysis(match);
                           }}
-                          className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-violet-950/60 border border-transparent hover:border-violet-700/50 transition-colors"
+                          className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-colors"
                           title="Abrir análisis estadístico completo"
                         >
-                          <BarChart2 className="w-3.5 h-3.5 text-violet-400" />
+                          <BarChart2 className="w-3.5 h-3.5 text-slate-300" />
                         </button>
                       </div>
                     </div>

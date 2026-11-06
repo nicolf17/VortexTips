@@ -43,6 +43,13 @@ export default function App() {
   // Modals state
   const [selectedMatchForModal, setSelectedMatchForModal] = useState<Match | null>(null);
   const [isCompetitionsModalOpen, setIsCompetitionsModalOpen] = useState<boolean>(false);
+  const [favoriteLeagues, setFavoriteLeagues] = useState<string[]>(['COL', 'UCL', 'EPL', 'ESP']);
+
+  const handleToggleFavoriteLeague = (leagueId: string) => {
+    setFavoriteLeagues((prev) =>
+      prev.includes(leagueId) ? prev.filter((id) => id !== leagueId) : [...prev, leagueId]
+    );
+  };
 
   // Load matches anchored to current day
   const loadMatches = async (dateLabel: string) => {
@@ -119,6 +126,9 @@ export default function App() {
     if (selectedLeague === 'ALL') {
       return { id: 'ALL', name: 'Todas las ligas', icon: '🌐' };
     }
+    if (selectedLeague === 'FAVORITES') {
+      return { id: 'FAVORITES', name: 'Mis Ligas Favoritas', icon: '⭐' };
+    }
     const found = COMPETITIONS_SIDEBAR.find((c) => c.id === selectedLeague);
     if (found) return found;
     const meta = getLeagueMeta(selectedLeague, selectedLeague);
@@ -129,6 +139,7 @@ export default function App() {
   const quickLeagueShortcuts = useMemo(() => {
     return [
       { code: 'ALL', name: 'Todas', icon: '🌐' },
+      { code: 'FAVORITES', name: 'Favoritas', icon: '⭐' },
       { code: 'UCL', name: 'Champions League', icon: '⭐' },
       { code: 'COL', name: 'Liga BetPlay', icon: '🇨🇴' },
       { code: 'EPL', name: 'Premier League', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -183,7 +194,12 @@ export default function App() {
       }
 
       // 3. League filter
-      if (selectedLeague !== 'ALL') {
+      if (selectedLeague === 'FAVORITES') {
+        const meta = getLeagueMeta(m.league, m.leagueCode);
+        if (!favoriteLeagues.includes(m.leagueCode) && !favoriteLeagues.includes(meta.code)) {
+          return false;
+        }
+      } else if (selectedLeague !== 'ALL') {
         const meta = getLeagueMeta(m.league, m.leagueCode);
         if (m.leagueCode !== selectedLeague && meta.code !== selectedLeague) {
           return false;
@@ -241,7 +257,7 @@ export default function App() {
                       onClick={() => setSelectedDate(d.label)}
                       className={`flex-1 min-w-[85px] sm:min-w-[110px] py-2 px-2.5 rounded-xl text-center transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-violet-600 text-white font-bold shadow-md shadow-violet-600/20 border border-violet-500'
+                          ? 'bg-slate-700 text-white font-bold shadow-sm border border-slate-600'
                           : 'bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                       }`}
                     >
@@ -250,7 +266,7 @@ export default function App() {
                           {d.dayName}
                         </span>
                         {d.isToday && (
-                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-violet-800 text-violet-100' : 'bg-violet-950 text-violet-300 border border-violet-800/60'}`}>
+                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-800/80 text-slate-300 border border-slate-700'}`}>
                             HOY
                           </span>
                         )}
@@ -285,7 +301,7 @@ export default function App() {
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#131b2a] hover:bg-slate-800 text-white font-bold text-xs sm:text-sm border border-slate-700 hover:border-slate-600 transition-all cursor-pointer group active:scale-95 shadow-sm"
                     title="Abrir menú y buscador de competiciones"
                   >
-                    <Trophy className="w-4 h-4 text-violet-400 shrink-0" />
+                    <Trophy className="w-4 h-4 text-slate-300 shrink-0" />
                     <span>Competiciones & Ligas</span>
                     <span className="px-2 py-0.5 rounded-md bg-[#1a2436] text-slate-200 font-mono text-xs border border-slate-700">
                       {selectedLeagueObj?.icon} {selectedLeagueObj?.name || 'Todas'}
@@ -309,13 +325,13 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Status Quick Pills */}
+                {/* Status Quick Pills: Clean Todos & En Vivo only */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-bold">
                   <button
                     onClick={() => setSelectedStatus('ALL')}
                     className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'ALL'
-                        ? 'bg-violet-600 text-white border border-violet-500 shadow-sm'
+                        ? 'bg-slate-700 text-white border border-slate-600 shadow-sm'
                         : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                     }`}
                   >
@@ -326,99 +342,61 @@ export default function App() {
                     onClick={() => setSelectedStatus('LIVE')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'LIVE'
-                        ? 'bg-purple-950/90 text-purple-200 border border-purple-700/70 shadow-sm'
+                        ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 shadow-sm'
                         : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                     }`}
                   >
-                    <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>En Vivo ({counts.live})</span>
                   </button>
-
-                  <button
-                    onClick={() => setSelectedStatus('SCHEDULED')}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
-                      selectedStatus === 'SCHEDULED'
-                        ? 'bg-violet-600 text-white border border-violet-500 shadow-sm'
-                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
-                    }`}
-                  >
-                    Programados ({counts.scheduled})
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedStatus('FINISHED')}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
-                      selectedStatus === 'FINISHED'
-                        ? 'bg-violet-600 text-white border border-violet-500 shadow-sm'
-                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
-                    }`}
-                  >
-                    Finalizados ({counts.finished})
-                  </button>
                 </div>
               </div>
 
-              {/* Row 2: Active Competitions & Leagues for Selected Day (only active leagues with matches scheduled) */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-750 overflow-x-auto no-scrollbar py-0.5">
-                <span className="text-[11px] font-semibold text-slate-400 shrink-0 hidden sm:inline">
-                  Competiciones del día:
-                </span>
-                {quickLeagueShortcuts
-                  .filter((ql) => ql.code === 'ALL' || (countsByLeague[ql.code] && countsByLeague[ql.code] > 0))
-                  .map((ql) => {
-                    const active = selectedLeague === ql.code;
-                    const matchCount = ql.code === 'ALL' ? counts.all : (countsByLeague[ql.code] || 0);
-
-                    return (
-                      <button
-                        key={ql.code}
-                        onClick={() => handleSelectLeagueAction(ql.code)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                          active
-                            ? 'bg-violet-600 text-white border border-violet-500 shadow-sm'
-                            : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
-                        }`}
-                        title={`Filtrar por ${ql.name}`}
-                      >
-                        <span>{ql.icon}</span>
-                        <span>{ql.name}</span>
-                        {matchCount > 0 && (
-                          <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-violet-800 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                            {matchCount}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-
-              {/* Row 3: Status Strip (Colombia Time 12H & Manual Sync Action) */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-750 text-xs text-slate-300">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold shrink-0">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span>Cartelera Oficial</span>
+              {/* Row 2: Active Competitions & Leagues for Selected Day (with Favoritas shortcut) */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-750 overflow-x-auto no-scrollbar py-0.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  <span className="text-[11px] font-semibold text-slate-400 shrink-0 hidden sm:inline mr-1">
+                    Competiciones del día:
                   </span>
-                  <span className="truncate font-medium text-slate-300">
-                    Sincronizado: <strong className="text-white font-mono">{lastApiSync}</strong> • Partidos estáticos del día
-                  </span>
+                  {quickLeagueShortcuts
+                    .filter((ql) => ql.code === 'ALL' || ql.code === 'FAVORITES' || (countsByLeague[ql.code] && countsByLeague[ql.code] > 0))
+                    .map((ql) => {
+                      const active = selectedLeague === ql.code;
+                      const matchCount = ql.code === 'ALL' ? counts.all : ql.code === 'FAVORITES' ? favoriteLeagues.length : (countsByLeague[ql.code] || 0);
+
+                      return (
+                        <button
+                          key={ql.code}
+                          onClick={() => handleSelectLeagueAction(ql.code)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                            active
+                              ? 'bg-slate-700 text-white border border-slate-600 shadow-sm'
+                              : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                          }`}
+                          title={`Filtrar por ${ql.name}`}
+                        >
+                          <span>{ql.icon}</span>
+                          <span>{ql.name}</span>
+                          {matchCount > 0 && (
+                            <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-slate-800 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                              {matchCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-mono text-slate-300 font-bold text-[11px] bg-[#131b2a] px-2 py-0.5 rounded-md border border-slate-750">
-                    🇨🇴 Hora Colombia (12H)
-                  </span>
-
-                  <button
-                    onClick={() => loadMatches(selectedDate)}
-                    disabled={isLoadingMatches}
-                    className="flex items-center gap-1.5 text-slate-300 hover:text-white font-bold transition-all cursor-pointer text-xs"
-                    title="Forzar actualización inmediata"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingMatches ? 'animate-spin text-violet-400' : ''}`} />
-                    <span>Actualizar</span>
-                  </button>
-                </div>
+                {/* Minimalist Manual Refresh Button (internal sync without visible badge texts) */}
+                <button
+                  onClick={() => loadMatches(selectedDate)}
+                  disabled={isLoadingMatches}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white font-bold transition-all cursor-pointer text-xs border border-slate-750 shrink-0"
+                  title="Actualizar partidos del día"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingMatches ? 'animate-spin text-slate-300' : 'text-slate-400'}`} />
+                  <span>Actualizar</span>
+                </button>
               </div>
             </div>
 
@@ -531,6 +509,8 @@ export default function App() {
         totalMatchesCount={matches.length}
         liveMatchesCount={counts.live}
         onNavigateToMatches={() => setActiveModule('partidos')}
+        favoriteLeagues={favoriteLeagues}
+        onToggleFavoriteLeague={handleToggleFavoriteLeague}
       />
 
       {/* Flashscore Complete Match Stats Modal */}

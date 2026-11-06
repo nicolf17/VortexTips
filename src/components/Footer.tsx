@@ -39,10 +39,10 @@ export const Footer: React.FC<FooterProps> = ({
               onClick={onResetToHome}
               className="flex items-center gap-2.5 text-left group focus:outline-none cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
-                <Activity className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 shadow-xs">
+                <Activity className="w-4 h-4 text-slate-300" />
               </div>
-              <span className="text-lg font-extrabold bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
+              <span className="text-lg font-extrabold text-white">
                 VORTEXTIPS
               </span>
             </button>
@@ -50,8 +50,8 @@ export const Footer: React.FC<FooterProps> = ({
               Plataforma independiente de inteligencia deportiva, estadísticas avanzadas y comparador de cuotas promedio de Betano y BetPlay.
             </p>
             <div className="pt-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-950/70 text-violet-300 border border-violet-800/50 text-[11px] font-semibold">
-                🇨🇴 {todayInfo.label} • Hora Colombia (COT)
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-semibold">
+                🇨🇴 {todayInfo.label} • Hora Colombia
               </span>
             </div>
           </div>

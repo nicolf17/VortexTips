@@ -50,15 +50,15 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             onClick={() => setSelectedStatus('LIVE')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
               selectedStatus === 'LIVE'
-                ? 'bg-purple-950/90 text-purple-200 border border-purple-700/70 shadow-sm'
-                : 'text-slate-300 hover:bg-purple-950/40 hover:text-white'
+                ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 shadow-sm'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-purple-400 animate-live-dot" />
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-live-dot" />
               <span>En directo</span>
             </span>
-            <span className="font-mono text-purple-300 text-[11px] font-bold">{counts.live}</span>
+            <span className="font-mono text-emerald-300 text-[11px] font-bold">{counts.live}</span>
           </button>
 
           {/* Próximos */}

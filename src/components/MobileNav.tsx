@@ -29,7 +29,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <div className="relative">
             <Trophy className="w-4 h-4 mb-1" />
             {liveCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             )}
           </div>
           <span className="text-[11px] font-bold">Partidos</span>
@@ -40,7 +40,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           onClick={onOpenCompetitionsModal}
           className="flex flex-col items-center justify-center py-1.5 rounded-xl transition-all cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800"
         >
-          <Globe className="w-4 h-4 mb-1 text-violet-400" />
+          <Globe className="w-4 h-4 mb-1 text-slate-300" />
           <span className="text-[11px] font-bold">Ligas</span>
         </button>
 
@@ -66,7 +66,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <Users className="w-4 h-4 mb-1 text-violet-400" />
+          <Users className="w-4 h-4 mb-1 text-slate-300" />
           <span className="text-[11px] font-bold">Árbitros</span>
         </button>
 
@@ -79,7 +79,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <Flame className="w-4 h-4 mb-1 text-violet-400" />
+          <Flame className="w-4 h-4 mb-1 text-slate-300" />
           <span className="text-[11px] font-bold">Radar</span>
         </button>
       </div>

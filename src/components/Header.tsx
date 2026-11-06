@@ -34,17 +34,13 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center gap-3 group text-left transition-transform active:scale-98 focus:outline-none cursor-pointer"
           title="Volver al menú principal"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20 group-hover:scale-105 transition-transform">
-            <Activity className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 shadow-sm group-hover:border-slate-600 transition-colors">
+            <Activity className="w-5 h-5 text-slate-300" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-violet-400 via-indigo-300 to-white bg-clip-text text-transparent">
+              <span className="text-xl font-extrabold tracking-tight text-white">
                 VORTEXTIPS
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold bg-violet-950/80 text-violet-300 border border-violet-800/60 px-2 py-0.5 rounded-md">
-                <Flame className="w-3 h-3 text-violet-400" />
-                RADAR PRO
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
@@ -71,14 +67,14 @@ export const Header: React.FC<HeaderProps> = ({
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-slate-700 cursor-pointer"
               title="Sincronizar cuotas y estadísticas en vivo"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-violet-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-slate-300' : ''}`} />
             </button>
           )}
 
           {/* Clean Search Trigger */}
           <button
             onClick={onOpenSearch}
-            className="flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-slate-300 bg-[#172032] hover:bg-slate-800 hover:text-white border border-slate-750 hover:border-violet-500/50 rounded-lg transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-slate-300 bg-[#172032] hover:bg-slate-800 hover:text-white border border-slate-750 hover:border-slate-600 rounded-lg transition-all shadow-xs cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-slate-400" />
             <span className="hidden sm:inline">Buscar jugador, árbitro o club...</span>

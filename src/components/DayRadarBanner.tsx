@@ -117,7 +117,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
         under25: m.odds?.under25 ? m.odds.under25 + 0.03 : 1.98,
         bttsYes: m.odds?.bttsYes ? m.odds.bttsYes - 0.01 : 1.79,
         bttsNo: m.odds?.bttsNo ? m.odds.bttsNo + 0.02 : 1.97,
-        cornersOver85: m.odds?.cornersOver85 ? m.odds.cornersOver85 + 0.02 : 1.74,
+        cornersOver85: m.odds?.cornersOver85 ? m.odds.cornersOver85 + 0.02 : 1.75,
       };
 
       let marketName = '';
@@ -214,15 +214,15 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-750">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-950/70 text-violet-400 border border-violet-800/40 flex items-center justify-center font-bold shrink-0">
-            <Flame className="w-5 h-5 text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center font-bold shrink-0">
+            <Flame className="w-5 h-5 text-slate-300" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 Radar de la Jornada • Mercados con Alto Valor (+EV)
               </h2>
-              <span className="text-[11px] font-semibold bg-violet-900/40 text-violet-300 border border-violet-700/50 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-md">
                 {currentDayInfo.dayName} ({currentDayInfo.label})
               </span>
             </div>
@@ -248,7 +248,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
             {/* Top metadata */}
             <div>
               <div className="flex items-center justify-between gap-1 mb-2">
-                <span className="text-[10px] font-bold text-violet-300 bg-violet-950/80 border border-violet-800/50 px-2 py-0.5 rounded truncate max-w-[170px]">
+                <span className="text-[10px] font-bold text-slate-300 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded truncate max-w-[170px]">
                   #{index + 1} {pick.marketCategory}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400 font-semibold shrink-0">
@@ -267,7 +267,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
 
               {/* Market Name & EV Badge */}
               <div className="mt-2.5 p-2 bg-[#141d2c] rounded-lg border border-slate-700 flex items-center justify-between gap-1">
-                <span className="text-xs font-bold text-violet-200 truncate">
+                <span className="text-xs font-bold text-slate-200 truncate">
                   {pick.marketName}
                 </span>
                 <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-700/60 px-1.5 py-0.5 rounded font-mono shrink-0">
@@ -277,7 +277,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
               </div>
 
               {/* Key context strip */}
-              <div className="mt-2 text-[10px] font-semibold text-violet-300/90 bg-violet-950/30 border border-violet-800/30 px-2 py-1 rounded">
+              <div className="mt-2 text-[10px] font-semibold text-slate-300 bg-slate-850/80 border border-slate-700/70 px-2 py-1 rounded">
                 ⚡ {pick.keyContext}
               </div>
 
@@ -299,7 +299,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
                   <div className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">
                     Cuota Promedio
                   </div>
-                  <div className="text-base font-extrabold text-violet-400 font-mono">
+                  <div className="text-base font-extrabold text-white font-mono">
                     {pick.averageOdd.toFixed(2)}
                   </div>
                 </div>
@@ -324,7 +324,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectMatchById(pick.matchId)}
-                className="w-full mt-3 py-2 px-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
+                className="w-full mt-3 py-2 px-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
                 title={`Ver análisis estadístico de ${pick.teams}`}
               >
                 <span>Ver Análisis Estadístico</span>
