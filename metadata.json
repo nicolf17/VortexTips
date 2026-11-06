@@ -1,0 +1,6 @@
+{
+  "name": "GolMetrics AI - Análisis y Pronósticos de Fútbol",
+  "description": "Plataforma de análisis de fútbol profesional con modelos de inteligencia artificial, cuotas en tiempo real, estadísticas avanzadas y buscador de valor de apuestas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
