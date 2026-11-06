@@ -7,14 +7,15 @@ import {
   Star,
 } from 'lucide-react';
 import { COMPETITIONS_SIDEBAR } from '../data/mockMatches';
+import { CountryFlag } from './CountryFlag';
 
 interface CompetitionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedLeague: string;
   onSelectLeague: (leagueCode: string) => void;
-  selectedStatus: 'ALL' | 'LIVE' | 'SCHEDULED' | 'FINISHED';
-  onSelectStatus: (status: 'ALL' | 'LIVE' | 'SCHEDULED' | 'FINISHED') => void;
+  selectedStatus: 'ALL' | 'LIVE' | 'FAVORITES' | 'SCHEDULED' | 'FINISHED';
+  onSelectStatus: (status: 'ALL' | 'LIVE' | 'FAVORITES' | 'SCHEDULED' | 'FINISHED') => void;
   countsByLeague: Record<string, number>;
   totalMatchesCount: number;
   liveMatchesCount: number;
@@ -295,7 +296,12 @@ export const CompetitionsModal: React.FC<CompetitionsModalProps> = ({
                         />
                       </button>
 
-                      <span className="text-base shrink-0">{comp.icon}</span>
+                      <CountryFlag
+                        country={comp.name}
+                        leagueCode={comp.id}
+                        icon={comp.icon}
+                        className="w-5 h-3.5 shadow-2xs shrink-0"
+                      />
                       <div className="min-w-0 flex-1">
                         <span className="font-bold text-xs sm:text-sm block truncate text-white">
                           {comp.name}

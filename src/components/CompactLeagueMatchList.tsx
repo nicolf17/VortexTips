@@ -3,11 +3,14 @@ import { Star, ChevronDown, ChevronUp, Pin, BarChart2 } from 'lucide-react';
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { CountryFlag } from './CountryFlag';
 
 interface CompactLeagueMatchListProps {
   matches: Match[];
   onOpenAnalysis: (match: Match) => void;
   onSelectLeague?: (leagueCode: string) => void;
+  favoriteMatchIds?: string[];
+  onToggleFavorite?: (matchId: string) => void;
 }
 
 interface LeagueGroup {
@@ -23,21 +26,27 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
   matches,
   onOpenAnalysis,
   onSelectLeague,
+  favoriteMatchIds,
+  onToggleFavorite,
 }) => {
-  // State for pinned/favorite matches
-  const [favoriteMatchIds, setFavoriteMatchIds] = useState<Set<string>>(new Set());
+  // Local fallback state for favorite matches if not controlled from parent
+  const [internalFavs, setInternalFavs] = useState<Set<string>>(new Set());
 
   // State for collapsed leagues
   const [collapsedLeagues, setCollapsedLeagues] = useState<Set<string>>(new Set());
 
   const toggleFavorite = (e: React.MouseEvent, matchId: string) => {
     e.stopPropagation();
-    setFavoriteMatchIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(matchId)) next.delete(matchId);
-      else next.add(matchId);
-      return next;
-    });
+    if (onToggleFavorite) {
+      onToggleFavorite(matchId);
+    } else {
+      setInternalFavs((prev) => {
+        const next = new Set(prev);
+        if (next.has(matchId)) next.delete(matchId);
+        else next.add(matchId);
+        return next;
+      });
+    }
   };
 
   const toggleLeagueCollapse = (leagueCode: string) => {
@@ -88,9 +97,9 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
 
       // Sort matches in group: favorites first, then by kickoff time
       const sortedMatches = [...matchList].sort((a, b) => {
-        const aFav = favoriteMatchIds.has(a.id) ? 1 : 0;
-        const bFav = favoriteMatchIds.has(b.id) ? 1 : 0;
-        if (aFav !== bFav) return bFav - aFav;
+        const aFav = favoriteMatchIds ? favoriteMatchIds.includes(a.id) : internalFavs.has(a.id);
+        const bFav = favoriteMatchIds ? favoriteMatchIds.includes(b.id) : internalFavs.has(b.id);
+        if (aFav !== bFav) return bFav ? 1 : -1;
         return a.kickoffTime.localeCompare(b.kickoffTime);
       });
 
@@ -110,7 +119,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
       const prioB = priorityMap[b.leagueCode] || 99;
       return prioA - prioB;
     });
-  }, [matches, favoriteMatchIds]);
+  }, [matches, favoriteMatchIds, internalFavs]);
 
   if (matches.length === 0) {
     return null;
@@ -126,23 +135,27 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
             key={group.leagueCode}
             className="rounded-xl overflow-hidden border border-slate-750 bg-[#121929] shadow-sm"
           >
-            {/* Flashscore-style League Header Bar */}
+            {/* Flashscore-style League Header Bar with prominent Country Flag */}
             <div
               onClick={() => toggleLeagueCollapse(group.leagueCode)}
               className="bg-[#152033] hover:bg-[#18253b] px-3.5 py-2.5 flex items-center justify-between border-b border-slate-700/80 cursor-pointer select-none transition-colors"
             >
               <div className="flex items-center gap-2.5 truncate">
-                {/* Header Star Icon */}
-                <Star className="w-4 h-4 text-slate-400 shrink-0" />
-
-                {/* Country Flag & Tournament Title */}
-                <span className="text-sm shrink-0">{group.icon}</span>
-                <span className="font-extrabold text-white text-xs sm:text-sm tracking-tight truncate">
-                  {group.fullTitle}
-                </span>
-
                 {/* Pin Icon */}
                 <Pin className="w-3.5 h-3.5 text-slate-400 rotate-45 shrink-0 hidden sm:inline" />
+
+                {/* Country Flag & Tournament Title */}
+                <div className="flex items-center gap-2 truncate">
+                  <CountryFlag
+                    country={group.country}
+                    leagueCode={group.leagueCode}
+                    icon={group.icon}
+                    className="w-5 h-3.5 shadow-sm shrink-0"
+                  />
+                  <span className="font-extrabold text-white text-xs sm:text-sm tracking-tight truncate">
+                    {group.fullTitle}
+                  </span>
+                </div>
               </div>
 
               {/* Right side: Clasificación link & Collapse Chevron */}
@@ -171,7 +184,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
             {!isCollapsed && (
               <div className="divide-y divide-slate-800/80">
                 {group.matches.map((match) => {
-                  const isFav = favoriteMatchIds.has(match.id);
+                  const isFav = favoriteMatchIds ? favoriteMatchIds.includes(match.id) : internalFavs.has(match.id);
                   const isLive = match.status === 'LIVE';
                   const isFinished = match.status === 'FINISHED';
 
@@ -279,7 +292,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                   isFinished && (match.homeScore ?? 0) > (match.awayScore ?? 0)
                                     ? 'text-white font-bold'
                                     : 'text-slate-200'
-                                } group-hover:text-violet-300 transition-colors`}
+                                } group-hover:text-purple-300 transition-colors`}
                               >
                                 {match.homeTeam.name}
                               </span>
@@ -315,7 +328,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                   isFinished && (match.awayScore ?? 0) > (match.homeScore ?? 0)
                                     ? 'text-white font-bold'
                                     : 'text-slate-200'
-                                } group-hover:text-violet-300 transition-colors`}
+                                } group-hover:text-purple-300 transition-colors`}
                               >
                                 {match.awayTeam.name}
                               </span>
@@ -328,41 +341,41 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                           </div>
                         </div>
 
-                        {/* Status / PREVIEW badge (like in the screenshot) */}
+                        {/* Status / PREVIEW badge with subdued dark purple */}
                         {!isLive && !isFinished && (
-                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#172236] border border-slate-700 rounded text-[10px] font-mono font-bold text-slate-300 group-hover:border-violet-500/60 group-hover:text-violet-200 transition-colors">
+                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#1a122a] border border-purple-900/50 rounded text-[10px] font-mono font-bold text-purple-300 group-hover:border-purple-700/60 transition-colors">
                             PREVIEW
                           </div>
                         )}
                       </div>
 
-                      {/* Right Side: Exact requested Odds Columns (ML: 1X2, AA: Ambos Anotan, Corners) */}
+                      {/* Right Side: Exact requested Odds Columns with subdued dark purple highlighting */}
                       <div className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
                         {/* ML (Moneyline 1X2) Box */}
                         <div
-                          className="bg-[#141d2e] border border-slate-750 rounded-lg px-2 py-1 flex items-center gap-1.5 text-[11px] font-mono text-slate-300 shadow-2xs"
+                          className="bg-[#181329] border border-purple-900/40 rounded-lg px-2 py-1 flex items-center gap-1.5 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title={`Cuotas 1X2 (Promedio Betano & BetPlay): Local ${homeAvg} | Empate ${drawAvg} | Visita ${awayAvg}`}
                         >
-                          <span className="text-[10px] text-slate-400 font-sans font-bold">1X2</span>
+                          <span className="text-[10px] text-purple-300/80 font-sans font-bold">1X2</span>
                           <span className="font-bold text-white">{homeAvg}</span>
-                          <span className="text-slate-600">|</span>
+                          <span className="text-purple-900">|</span>
                           <span className="text-slate-400 hidden sm:inline">{drawAvg}</span>
-                          <span className="text-slate-600 hidden sm:inline">|</span>
+                          <span className="text-purple-900 hidden sm:inline">|</span>
                           <span className="font-bold text-white">{awayAvg}</span>
                         </div>
 
-                        {/* AA (Ambos Anotan / BTTS) Box */}
+                        {/* AA (Ambos Anotan / BTTS) Box with distinctive dark purple highlight */}
                         <div
-                          className="bg-[#141d2e] border border-slate-750 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
+                          className="bg-[#181329] border border-purple-900/40 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title="Ambos Equipos Anotan (AA: Sí)"
                         >
-                          <span className="text-[10px] text-slate-400 font-sans font-bold">AA</span>
-                          <span className="font-bold text-slate-200">{aaAvg}</span>
+                          <span className="text-[10px] text-purple-300 font-sans font-bold">AA</span>
+                          <span className="font-bold text-purple-200">{aaAvg}</span>
                         </div>
 
                         {/* Corners (+8.5c) Box */}
                         <div
-                          className="bg-[#141d2e] border border-slate-750 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
+                          className="bg-[#141d2a] border border-slate-750 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title="Línea de Córners (+8.5 Córners Totales)"
                         >
                           <span className="text-[10px] text-emerald-400 font-sans font-bold">+8.5c</span>

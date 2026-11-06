@@ -3,6 +3,7 @@ import { Flame, ShieldCheck, ChevronRight, TrendingUp } from 'lucide-react';
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { getDynamicDaysCarousel, getTodayTabInfo, formatColombia12h } from '../utils/dateUtils';
+import { CountryFlag } from './CountryFlag';
 
 interface DayRadarBannerProps {
   selectedDate?: string;
@@ -15,6 +16,8 @@ interface RadarPick {
   matchId: string;
   teams: string;
   leagueName: string;
+  leagueCode: string;
+  country: string;
   leagueIcon: string;
   marketName: string;
   marketCategory: string;
@@ -190,6 +193,8 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
         matchId: m.id,
         teams: `${m.homeTeam.name} vs ${m.awayTeam.name}`,
         leagueName: leagueMeta.shortName,
+        leagueCode: m.leagueCode,
+        country: leagueMeta.country,
         leagueIcon: leagueMeta.icon,
         marketName,
         marketCategory,
@@ -214,15 +219,15 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-750">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center font-bold shrink-0">
-            <Flame className="w-5 h-5 text-slate-300" />
+          <div className="w-10 h-10 rounded-xl bg-[#241738] text-purple-300 border border-purple-800/60 flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <Flame className="w-5 h-5 text-purple-300" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 Radar de la Jornada • Mercados con Alto Valor (+EV)
               </h2>
-              <span className="text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-semibold bg-[#221638] text-purple-200 border border-purple-800/60 px-2 py-0.5 rounded-md">
                 {currentDayInfo.dayName} ({currentDayInfo.label})
               </span>
             </div>
@@ -248,7 +253,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
             {/* Top metadata */}
             <div>
               <div className="flex items-center justify-between gap-1 mb-2">
-                <span className="text-[10px] font-bold text-slate-300 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded truncate max-w-[170px]">
+                <span className="text-[10px] font-bold text-purple-200 bg-[#221638] border border-purple-800/60 px-2 py-0.5 rounded truncate max-w-[170px]">
                   #{index + 1} {pick.marketCategory}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400 font-semibold shrink-0">
@@ -256,9 +261,14 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
                 </span>
               </div>
 
-              {/* Match and League with flag/symbol */}
+              {/* Match and League with country flag badge */}
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium truncate">
-                <span>{pick.leagueIcon}</span>
+                <CountryFlag
+                  country={pick.country}
+                  leagueCode={pick.leagueCode}
+                  icon={pick.leagueIcon}
+                  className="w-4 h-2.5 shadow-2xs"
+                />
                 <span>{pick.leagueName}</span>
               </div>
               <h3 className="font-bold text-white text-sm mt-0.5 line-clamp-1">
@@ -266,12 +276,12 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
               </h3>
 
               {/* Market Name & EV Badge */}
-              <div className="mt-2.5 p-2 bg-[#141d2c] rounded-lg border border-slate-700 flex items-center justify-between gap-1">
+              <div className="mt-2.5 p-2 bg-[#181126] rounded-lg border border-purple-900/50 flex items-center justify-between gap-1">
                 <span className="text-xs font-bold text-slate-200 truncate">
                   {pick.marketName}
                 </span>
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-700/60 px-1.5 py-0.5 rounded font-mono shrink-0">
-                  <TrendingUp className="w-3 h-3 text-emerald-400" />
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-200 bg-[#2b1645] border border-purple-700/60 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  <TrendingUp className="w-3 h-3 text-purple-300" />
                   +{pick.evPercent}% EV
                 </span>
               </div>
@@ -296,7 +306,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
             <div className="mt-4 pt-3 border-t border-slate-700/70">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">
+                  <div className="text-[9px] font-bold uppercase text-purple-300/80 tracking-wider">
                     Cuota Promedio
                   </div>
                   <div className="text-base font-extrabold text-white font-mono">
@@ -320,11 +330,11 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
                 </span>
               </div>
 
-              {/* The ONLY clickable element: Button to view statistical analysis */}
+              {/* The ONLY clickable element: Button to view statistical analysis with subdued purple styling */}
               <button
                 type="button"
                 onClick={() => onSelectMatchById(pick.matchId)}
-                className="w-full mt-3 py-2 px-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
+                className="w-full mt-3 py-2 px-3 bg-[#27173e] hover:bg-[#341f53] border border-purple-700/60 text-purple-100 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
                 title={`Ver análisis estadístico de ${pick.teams}`}
               >
                 <span>Ver Análisis Estadístico</span>

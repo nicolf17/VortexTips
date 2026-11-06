@@ -15,6 +15,7 @@ import { PropsRadarModule } from './components/PropsRadarModule';
 import { Footer } from './components/Footer';
 import { getTodayTabInfo, getDynamicDaysCarousel, getColombiaCurrentTimeStr } from './utils/dateUtils';
 import { getLeagueMeta } from './utils/leagueUtils';
+import { CountryFlag } from './components/CountryFlag';
 import {
   Trophy,
   ChevronDown,
@@ -23,6 +24,7 @@ import {
   X,
   Calendar,
   Flame,
+  Star,
 } from 'lucide-react';
 
 export default function App() {
@@ -32,13 +34,37 @@ export default function App() {
   const [activeModule, setActiveModule] = useState<string>('partidos');
   const [selectedDate, setSelectedDate] = useState<string>(todayInfo.label);
   const [selectedLeague, setSelectedLeague] = useState<string>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'LIVE' | 'SCHEDULED' | 'FINISHED'>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'LIVE' | 'FAVORITES'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Real match state
   const [matches, setMatches] = useState<Match[]>(VORTEX_MATCHES);
   const [isLoadingMatches, setIsLoadingMatches] = useState<boolean>(false);
   const [lastApiSync, setLastApiSync] = useState<string>(getColombiaCurrentTimeStr());
+
+  // Favorite match IDs (Match-level favorites)
+  const [favoriteMatchIds, setFavoriteMatchIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('vortextips_fav_matches');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleToggleFavoriteMatch = (matchId: string) => {
+    setFavoriteMatchIds((prev) => {
+      const updated = prev.includes(matchId)
+        ? prev.filter((id) => id !== matchId)
+        : [...prev, matchId];
+      try {
+        localStorage.setItem('vortextips_fav_matches', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
 
   // Modals state
   const [selectedMatchForModal, setSelectedMatchForModal] = useState<Match | null>(null);
@@ -95,13 +121,15 @@ export default function App() {
     const live = pool.filter((m) => m.status === 'LIVE').length;
     const scheduled = pool.filter((m) => m.status === 'SCHEDULED').length;
     const finished = pool.filter((m) => m.status === 'FINISHED').length;
+    const favorites = matches.filter((m) => favoriteMatchIds.includes(m.id)).length;
     return {
       all: pool.length,
       live,
       scheduled,
       finished,
+      favorites,
     };
-  }, [matches, currentSelectedDayObj, selectedDate]);
+  }, [matches, currentSelectedDayObj, selectedDate, favoriteMatchIds]);
 
   // Dynamic counts per competition league for selected day
   const countsByLeague = useMemo(() => {
@@ -138,17 +166,16 @@ export default function App() {
   // Quick league shortcuts with official country flags and tournament symbols
   const quickLeagueShortcuts = useMemo(() => {
     return [
-      { code: 'ALL', name: 'Todas', icon: '🌐' },
-      { code: 'FAVORITES', name: 'Favoritas', icon: '⭐' },
-      { code: 'UCL', name: 'Champions League', icon: '⭐' },
-      { code: 'COL', name: 'Liga BetPlay', icon: '🇨🇴' },
-      { code: 'EPL', name: 'Premier League', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-      { code: 'ESP', name: 'LaLiga', icon: '🇪🇸' },
-      { code: 'ITA', name: 'Serie A', icon: '🇮🇹' },
-      { code: 'GER', name: 'Bundesliga', icon: '🇩🇪' },
-      { code: 'FRA', name: 'Ligue 1', icon: '🇫🇷' },
-      { code: 'LIB', name: 'Libertadores', icon: '🏆' },
-      { code: 'LMX', name: 'Liga MX', icon: '🇲🇽' },
+      { code: 'ALL', name: 'Todas', icon: '🌐', country: '' },
+      { code: 'COL', name: 'Liga BetPlay', icon: '🇨🇴', country: 'Colombia' },
+      { code: 'EPL', name: 'Premier League', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', country: 'Inglaterra' },
+      { code: 'ESP', name: 'LaLiga', icon: '🇪🇸', country: 'España' },
+      { code: 'UCL', name: 'Champions League', icon: '⭐', country: 'Europa' },
+      { code: 'ITA', name: 'Serie A', icon: '🇮🇹', country: 'Italia' },
+      { code: 'GER', name: 'Bundesliga', icon: '🇩🇪', country: 'Alemania' },
+      { code: 'FRA', name: 'Ligue 1', icon: '🇫🇷', country: 'Francia' },
+      { code: 'LIB', name: 'Libertadores', icon: '🏆', country: 'Sudamérica' },
+      { code: 'LMX', name: 'Liga MX', icon: '🇲🇽', country: 'México' },
     ];
   }, []);
 
@@ -173,24 +200,31 @@ export default function App() {
   // Filter matches based on selected Date, League, Status, and Search Query
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
-      // 1. Date filter
-      if (selectedDate && currentSelectedDayObj) {
-        const matchesDateKey = m.dateKey && currentSelectedDayObj.dateKey && m.dateKey === currentSelectedDayObj.dateKey;
-        const matchesDateFormatted = m.dateFormatted && m.dateFormatted.includes(selectedDate);
-        if (!matchesDateKey && !matchesDateFormatted) {
-          // If match belongs to another specific carousel date, filter it out
-          const isBelongingToOtherCarouselDay = carouselDays.some(
-            (cd) => cd.label !== selectedDate && (m.dateKey === cd.dateKey || m.dateFormatted.includes(cd.label))
-          );
-          if (isBelongingToOtherCarouselDay) {
-            return false;
+      // 1. Status filter: FAVORITES shows all favorited matches
+      if (selectedStatus === 'FAVORITES') {
+        if (!favoriteMatchIds.includes(m.id)) {
+          return false;
+        }
+      } else {
+        // Date filter for regular tabs
+        if (selectedDate && currentSelectedDayObj) {
+          const matchesDateKey = m.dateKey && currentSelectedDayObj.dateKey && m.dateKey === currentSelectedDayObj.dateKey;
+          const matchesDateFormatted = m.dateFormatted && m.dateFormatted.includes(selectedDate);
+          if (!matchesDateKey && !matchesDateFormatted) {
+            // If match belongs to another specific carousel date, filter it out
+            const isBelongingToOtherCarouselDay = carouselDays.some(
+              (cd) => cd.label !== selectedDate && (m.dateKey === cd.dateKey || m.dateFormatted.includes(cd.label))
+            );
+            if (isBelongingToOtherCarouselDay) {
+              return false;
+            }
           }
         }
-      }
 
-      // 2. Status filter
-      if (selectedStatus !== 'ALL' && m.status !== selectedStatus) {
-        return false;
+        // Live filter
+        if (selectedStatus === 'LIVE' && m.status !== 'LIVE') {
+          return false;
+        }
       }
 
       // 3. League filter
@@ -257,7 +291,7 @@ export default function App() {
                       onClick={() => setSelectedDate(d.label)}
                       className={`flex-1 min-w-[85px] sm:min-w-[110px] py-2 px-2.5 rounded-xl text-center transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-slate-700 text-white font-bold shadow-sm border border-slate-600'
+                          ? 'bg-[#291a3f] text-purple-100 font-bold shadow-sm border border-purple-700/60'
                           : 'bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                       }`}
                     >
@@ -266,7 +300,7 @@ export default function App() {
                           {d.dayName}
                         </span>
                         {d.isToday && (
-                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-800/80 text-slate-300 border border-slate-700'}`}>
+                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-[#1d122e] text-purple-200' : 'bg-slate-800/80 text-slate-300 border border-slate-700'}`}>
                             HOY
                           </span>
                         )}
@@ -311,12 +345,12 @@ export default function App() {
 
                   {/* Active filter badge if league is filtered */}
                   {selectedLeague !== 'ALL' && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131b2a] border border-slate-700 text-xs font-bold text-slate-200 shadow-sm">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#201533] border border-purple-800/60 text-xs font-bold text-purple-200 shadow-sm">
                       <span>{selectedLeagueObj?.icon}</span>
                       <span>{selectedLeagueObj?.name}</span>
                       <button
                         onClick={() => setSelectedLeague('ALL')}
-                        className="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white ml-1 cursor-pointer"
+                        className="p-0.5 rounded hover:bg-purple-900/60 text-purple-300 hover:text-white ml-1 cursor-pointer"
                         title="Quitar filtro de liga"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -325,13 +359,13 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Status Quick Pills: Clean Todos & En Vivo only */}
+                {/* Status Quick Pills: Todos, En Vivo, and ⭐ Favoritos */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-bold">
                   <button
                     onClick={() => setSelectedStatus('ALL')}
                     className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'ALL'
-                        ? 'bg-slate-700 text-white border border-slate-600 shadow-sm'
+                        ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
                         : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                     }`}
                   >
@@ -349,20 +383,33 @@ export default function App() {
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>En Vivo ({counts.live})</span>
                   </button>
+
+                  <button
+                    onClick={() => setSelectedStatus('FAVORITES')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
+                      selectedStatus === 'FAVORITES'
+                        ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
+                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                    }`}
+                    title="Ver todos los partidos guardados en favoritos"
+                  >
+                    <Star className={`w-3.5 h-3.5 ${selectedStatus === 'FAVORITES' || favoriteMatchIds.length > 0 ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />
+                    <span>Favoritos ({favoriteMatchIds.length})</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Row 2: Active Competitions & Leagues for Selected Day (with Favoritas shortcut) */}
+              {/* Row 2: Active Competitions & Leagues for Selected Day (with clear country flags) */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-750 overflow-x-auto no-scrollbar py-0.5">
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                   <span className="text-[11px] font-semibold text-slate-400 shrink-0 hidden sm:inline mr-1">
                     Competiciones del día:
                   </span>
                   {quickLeagueShortcuts
-                    .filter((ql) => ql.code === 'ALL' || ql.code === 'FAVORITES' || (countsByLeague[ql.code] && countsByLeague[ql.code] > 0))
+                    .filter((ql) => ql.code === 'ALL' || (countsByLeague[ql.code] && countsByLeague[ql.code] > 0))
                     .map((ql) => {
                       const active = selectedLeague === ql.code;
-                      const matchCount = ql.code === 'ALL' ? counts.all : ql.code === 'FAVORITES' ? favoriteLeagues.length : (countsByLeague[ql.code] || 0);
+                      const matchCount = ql.code === 'ALL' ? counts.all : (countsByLeague[ql.code] || 0);
 
                       return (
                         <button
@@ -370,15 +417,19 @@ export default function App() {
                           onClick={() => handleSelectLeagueAction(ql.code)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             active
-                              ? 'bg-slate-700 text-white border border-slate-600 shadow-sm'
+                              ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
                               : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                           }`}
                           title={`Filtrar por ${ql.name}`}
                         >
-                          <span>{ql.icon}</span>
+                          {ql.code !== 'ALL' && ql.country ? (
+                            <CountryFlag country={ql.country} leagueCode={ql.code} icon={ql.icon} className="w-4 h-2.5 shadow-2xs shrink-0" />
+                          ) : (
+                            <span>{ql.icon}</span>
+                          )}
                           <span>{ql.name}</span>
                           {matchCount > 0 && (
-                            <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-slate-800 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                            <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-[#1e1330] text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
                               {matchCount}
                             </span>
                           )}
@@ -404,27 +455,41 @@ export default function App() {
             <div className="space-y-3 w-full min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
-                  <span>{selectedLeagueObj?.icon}</span>
-                  <span>
-                    {selectedLeague === 'ALL'
-                      ? `Cartelera de Partidos (${filteredMatches.length} partidos)`
-                      : `${selectedLeagueObj?.name} (${filteredMatches.length} partidos)`}
-                  </span>
+                  {selectedStatus === 'FAVORITES' ? (
+                    <>
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <span>Partidos Favoritos ({filteredMatches.length})</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{selectedLeagueObj?.icon}</span>
+                      <span>
+                        {selectedLeague === 'ALL'
+                          ? `Cartelera de Partidos (${filteredMatches.length} partidos)`
+                          : `${selectedLeagueObj?.name} (${filteredMatches.length} partidos)`}
+                      </span>
+                    </>
+                  )}
                 </h3>
                 <span className="text-xs text-slate-300 font-mono font-bold bg-[#172133] px-2.5 py-1 rounded-md border border-slate-750">
-                  {currentSelectedDayObj.dayName} • {selectedDate}
+                  {selectedStatus === 'FAVORITES' ? '⭐ Mis Favoritos' : `${currentSelectedDayObj.dayName} • ${selectedDate}`}
                 </span>
               </div>
 
               {isLoadingMatches ? (
                 <div className="p-12 text-center rounded-2xl bg-[#172133] border border-slate-750 text-xs sm:text-sm text-slate-300 flex flex-col items-center justify-center gap-2 font-bold">
-                  <RefreshCw className="w-6 h-6 animate-spin text-violet-400" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-purple-400" />
                   <span>Sincronizando partidos oficiales (Hora Colombia)...</span>
                 </div>
               ) : filteredMatches.length === 0 ? (
                 <div className="p-8 sm:p-10 rounded-2xl bg-[#172133] border border-slate-750 text-center text-xs sm:text-sm text-slate-300 space-y-3">
                   <p className="font-medium text-slate-300 max-w-lg mx-auto">
-                    {selectedLeague !== 'ALL' ? (
+                    {selectedStatus === 'FAVORITES' ? (
+                      <>
+                        No tienes partidos marcados como <strong className="text-purple-200">Favoritos</strong> todavía.
+                        <br className="hidden sm:inline" /> Haz clic en la estrella <span className="text-amber-400 font-bold">⭐</span> de cualquier partido en la cartelera para agregarlo aquí.
+                      </>
+                    ) : selectedLeague !== 'ALL' ? (
                       <>
                         No hay partidos programados de <strong className="text-white">{selectedLeagueObj?.name}</strong> para la fecha seleccionada ({selectedDate}).
                       </>
@@ -439,7 +504,7 @@ export default function App() {
                         setSelectedStatus('ALL');
                         setSearchQuery('');
                       }}
-                      className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-2 rounded-xl bg-[#291a3f] hover:bg-[#382356] border border-purple-700/60 text-purple-100 font-bold text-xs transition-all cursor-pointer shadow-sm"
                     >
                       Ver todos los partidos ({matches.length})
                     </button>
@@ -456,6 +521,8 @@ export default function App() {
                   matches={filteredMatches}
                   onOpenAnalysis={(m) => setSelectedMatchForModal(m)}
                   onSelectLeague={(code) => handleSelectLeagueAction(code)}
+                  favoriteMatchIds={favoriteMatchIds}
+                  onToggleFavorite={handleToggleFavoriteMatch}
                 />
               )}
             </div>
@@ -504,7 +571,13 @@ export default function App() {
         selectedLeague={selectedLeague}
         onSelectLeague={handleSelectLeagueAction}
         selectedStatus={selectedStatus}
-        onSelectStatus={(status) => setSelectedStatus(status)}
+        onSelectStatus={(status) => {
+          if (status === 'ALL' || status === 'LIVE' || status === 'FAVORITES') {
+            setSelectedStatus(status);
+          } else {
+            setSelectedStatus('ALL');
+          }
+        }}
         countsByLeague={countsByLeague}
         totalMatchesCount={matches.length}
         liveMatchesCount={counts.live}
