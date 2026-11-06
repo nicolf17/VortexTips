@@ -22,18 +22,37 @@ export function getColombiaCurrentDate(): Date {
 }
 
 /**
- * Returns formatted Colombia time string e.g. "14:30 COT"
+ * Returns formatted Colombia time string e.g. "2:30 PM COT" (12-hour format)
  */
 export function getColombiaCurrentTimeStr(): string {
   return (
-    new Date().toLocaleTimeString('es-CO', {
+    new Date().toLocaleTimeString('en-US', {
       timeZone: 'America/Bogota',
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false,
+      hour12: true,
     }) + ' COT'
   );
+}
+
+/**
+ * Formats any kickoff time or time string to 12-hour Colombia format (e.g. "2:00 PM", "7:30 PM")
+ */
+export function formatColombia12h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const cleaned = timeStr.replace(/COT/i, '').replace(/UTC-5/i, '').trim();
+  if (/(am|pm|a\. m\.|p\. m\.)/i.test(cleaned)) {
+    return cleaned.replace(/\s+/g, ' ').toUpperCase();
+  }
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return timeStr;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${ampm}`;
 }
 
 const MONTH_NAMES_ES = [

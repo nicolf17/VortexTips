@@ -4,6 +4,7 @@ import { VORTEX_MATCHES, COMPETITIONS_SIDEBAR } from './data/mockMatches';
 import { fetchLiveFootballMatches } from './services/api';
 import { Header } from './components/Header';
 import { DayRadarBanner } from './components/DayRadarBanner';
+import { CompactLeagueMatchList } from './components/CompactLeagueMatchList';
 import { CleanMatchCard } from './components/CleanMatchCard';
 import { CompetitionsModal } from './components/CompetitionsModal';
 import { FlashscoreDetailModal } from './components/FlashscoreDetailModal';
@@ -38,7 +39,6 @@ export default function App() {
   const [matches, setMatches] = useState<Match[]>(VORTEX_MATCHES);
   const [isLoadingMatches, setIsLoadingMatches] = useState<boolean>(false);
   const [lastApiSync, setLastApiSync] = useState<string>(getColombiaCurrentTimeStr());
-  const [secondsToNextSync, setSecondsToNextSync] = useState<number>(20);
 
   // Modals state
   const [selectedMatchForModal, setSelectedMatchForModal] = useState<Match | null>(null);
@@ -65,24 +65,9 @@ export default function App() {
     }
   };
 
-  // Continuous background synchronization every 20 seconds
+  // Load matches whenever the selected date changes (static, no disruptive auto-refresh loops)
   useEffect(() => {
     loadMatches(selectedDate);
-    setSecondsToNextSync(20);
-
-    const syncInterval = setInterval(() => {
-      loadMatches(selectedDate);
-      setSecondsToNextSync(20);
-    }, 20000);
-
-    const countdownInterval = setInterval(() => {
-      setSecondsToNextSync((prev) => (prev > 1 ? prev - 1 : 20));
-    }, 1000);
-
-    return () => {
-      clearInterval(syncInterval);
-      clearInterval(countdownInterval);
-    };
   }, [selectedDate]);
 
   // Current day metadata object
@@ -407,21 +392,21 @@ export default function App() {
                   })}
               </div>
 
-              {/* Row 3: Real-Time Live Sync Status Strip (Colombia Time & Auto-sync count) */}
+              {/* Row 3: Status Strip (Colombia Time 12H & Manual Sync Action) */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-750 text-xs text-slate-300">
                 <div className="flex items-center gap-2 truncate">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-bold shrink-0">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>En Vivo</span>
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span>Cartelera Oficial</span>
                   </span>
                   <span className="truncate font-medium text-slate-300">
-                    Sincronización ({lastApiSync}) • Auto-actualización en <strong className="text-white font-mono">{secondsToNextSync}s</strong>
+                    Sincronizado: <strong className="text-white font-mono">{lastApiSync}</strong> • Partidos estáticos del día
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-mono text-slate-300 font-bold text-[11px] bg-[#131b2a] px-2 py-0.5 rounded-md border border-slate-750">
-                    🇨🇴 Hora Colombia (COT / UTC-5)
+                    🇨🇴 Hora Colombia (12H)
                   </span>
 
                   <button
@@ -437,14 +422,14 @@ export default function App() {
               </div>
             </div>
 
-            {/* Clean Matches of the Day List */}
+            {/* Clean Matches of the Day List: Compact Flashscore Layout Grouped by League */}
             <div className="space-y-3 w-full min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
                   <span>{selectedLeagueObj?.icon}</span>
                   <span>
                     {selectedLeague === 'ALL'
-                      ? `Cartelera Oficial (${filteredMatches.length} partidos)`
+                      ? `Cartelera de Partidos (${filteredMatches.length} partidos)`
                       : `${selectedLeagueObj?.name} (${filteredMatches.length} partidos)`}
                   </span>
                 </h3>
@@ -456,7 +441,7 @@ export default function App() {
               {isLoadingMatches ? (
                 <div className="p-12 text-center rounded-2xl bg-[#172133] border border-slate-750 text-xs sm:text-sm text-slate-300 flex flex-col items-center justify-center gap-2 font-bold">
                   <RefreshCw className="w-6 h-6 animate-spin text-violet-400" />
-                  <span>Sincronizando partidos oficiales en tiempo real (Hora Colombia)...</span>
+                  <span>Sincronizando partidos oficiales (Hora Colombia)...</span>
                 </div>
               ) : filteredMatches.length === 0 ? (
                 <div className="p-8 sm:p-10 rounded-2xl bg-[#172133] border border-slate-750 text-center text-xs sm:text-sm text-slate-300 space-y-3">
@@ -489,15 +474,11 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 w-full min-w-0">
-                  {filteredMatches.map((match) => (
-                    <CleanMatchCard
-                      key={match.id}
-                      match={match}
-                      onOpenAnalysis={(m) => setSelectedMatchForModal(m)}
-                    />
-                  ))}
-                </div>
+                <CompactLeagueMatchList
+                  matches={filteredMatches}
+                  onOpenAnalysis={(m) => setSelectedMatchForModal(m)}
+                  onSelectLeague={(code) => handleSelectLeagueAction(code)}
+                />
               )}
             </div>
           </div>

@@ -56,6 +56,8 @@ export interface BookmakerOddDetail {
   under25: number;
   bttsYes: number;
   bttsNo: number;
+  cornersOver85?: number;
+  cornersOver95?: number;
 }
 
 export interface MatchOdds {
@@ -66,6 +68,8 @@ export interface MatchOdds {
   under25: number;
   bttsYes: number;
   bttsNo: number;
+  cornersOver85?: number;
+  cornersOver95?: number;
   provider?: string;
   hasRealOdds?: boolean;
   betano?: BookmakerOddDetail;

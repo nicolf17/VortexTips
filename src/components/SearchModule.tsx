@@ -3,6 +3,7 @@ import { Search, X, User, ShieldAlert, Calendar, ChevronRight } from 'lucide-rea
 import { Match, PlayerProfile, RefereeInfo } from '../types/football';
 import { PLAYERS_DATA, REFEREES_DATA, MOCK_MATCHES } from '../data/mockMatches';
 import { getLeagueMeta } from '../utils/leagueUtils';
+import { formatColombia12h } from '../utils/dateUtils';
 
 interface SearchModuleProps {
   isOpen?: boolean;
@@ -254,7 +255,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                           <span>{leagueMeta.icon}</span>
                           <span className="font-semibold text-slate-300">{leagueMeta.shortName}</span>
                           <span>•</span>
-                          <span className="font-mono text-violet-300 font-semibold">🇨🇴 {match.kickoffTime}</span>
+                          <span className="font-mono text-violet-300 font-semibold">🇨🇴 {formatColombia12h(match.kickoffTime)}</span>
                         </div>
                         <div className="font-bold text-white text-sm group-hover:text-violet-300 transition-colors">
                           {match.homeTeam.name} vs {match.awayTeam.name}

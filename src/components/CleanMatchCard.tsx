@@ -2,6 +2,7 @@ import React from 'react';
 import { Match } from '../types/football';
 import { ChevronRight, ShieldAlert, BarChart3, Percent } from 'lucide-react';
 import { getLeagueMeta } from '../utils/leagueUtils';
+import { formatColombia12h } from '../utils/dateUtils';
 
 interface CleanMatchCardProps {
   match: Match;
@@ -60,7 +61,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
     trendDescription: 'Árbitro oficial',
   };
 
-  const kickoffTime = match.kickoffTime || '15:00 COT';
+  const kickoffTime = formatColombia12h(match.kickoffTime || '3:00 PM');
 
   // Calculate real average odds
   const homeAvg = ((betano.home + betplay.home) / 2).toFixed(2);

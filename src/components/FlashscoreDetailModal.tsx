@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
+import { formatColombia12h } from '../utils/dateUtils';
 
 interface FlashscoreDetailModalProps {
   match: Match | null;
@@ -67,7 +68,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
     trendDescription: 'Colegiado internacional FIFA y CONMEBOL.',
   };
 
-  const kickoffTime = match.kickoffTime || '15:00 COT';
+  const kickoffTime = formatColombia12h(match.kickoffTime || '3:00 PM');
 
   // Calculate averages
   const homeAvg = ((betano.home + betplay.home) / 2).toFixed(2);
