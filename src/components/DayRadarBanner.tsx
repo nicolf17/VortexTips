@@ -219,15 +219,15 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-750">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#241738] text-purple-300 border border-purple-800/60 flex items-center justify-center font-bold shrink-0 shadow-xs">
-            <Flame className="w-5 h-5 text-purple-300" />
+          <div className="w-10 h-10 rounded-xl bg-[#0c1f38] text-sky-300 border border-sky-500/40 flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <Flame className="w-5 h-5 text-sky-400" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 Radar de la Jornada • Mercados con Alto Valor (+EV)
               </h2>
-              <span className="text-[11px] font-semibold bg-[#221638] text-purple-200 border border-purple-800/60 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-semibold bg-[#0f2442] text-sky-200 border border-sky-500/40 px-2 py-0.5 rounded-md">
                 {currentDayInfo.dayName} ({currentDayInfo.label})
               </span>
             </div>
@@ -253,7 +253,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
             {/* Top metadata */}
             <div>
               <div className="flex items-center justify-between gap-1 mb-2">
-                <span className="text-[10px] font-bold text-purple-200 bg-[#221638] border border-purple-800/60 px-2 py-0.5 rounded truncate max-w-[170px]">
+                <span className="text-[10px] font-bold text-sky-200 bg-[#0e223d] border border-sky-500/30 px-2 py-0.5 rounded truncate max-w-[170px]">
                   #{index + 1} {pick.marketCategory}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400 font-semibold shrink-0">
@@ -276,12 +276,12 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
               </h3>
 
               {/* Market Name & EV Badge */}
-              <div className="mt-2.5 p-2 bg-[#181126] rounded-lg border border-purple-900/50 flex items-center justify-between gap-1">
+              <div className="mt-2.5 p-2 bg-[#0a182d] rounded-lg border border-sky-500/30 flex items-center justify-between gap-1">
                 <span className="text-xs font-bold text-slate-200 truncate">
                   {pick.marketName}
                 </span>
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-200 bg-[#2b1645] border border-purple-700/60 px-1.5 py-0.5 rounded font-mono shrink-0">
-                  <TrendingUp className="w-3 h-3 text-purple-300" />
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-sky-200 bg-sky-950/80 border border-sky-500/40 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  <TrendingUp className="w-3 h-3 text-sky-300" />
                   +{pick.evPercent}% EV
                 </span>
               </div>
@@ -306,7 +306,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
             <div className="mt-4 pt-3 border-t border-slate-700/70">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[9px] font-bold uppercase text-purple-300/80 tracking-wider">
+                  <div className="text-[9px] font-bold uppercase text-sky-300/80 tracking-wider">
                     Cuota Promedio
                   </div>
                   <div className="text-base font-extrabold text-white font-mono">
@@ -330,11 +330,11 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
                 </span>
               </div>
 
-              {/* The ONLY clickable element: Button to view statistical analysis with subdued purple styling */}
+              {/* The ONLY clickable element: Button to view statistical analysis with clean light blue styling */}
               <button
                 type="button"
                 onClick={() => onSelectMatchById(pick.matchId)}
-                className="w-full mt-3 py-2 px-3 bg-[#27173e] hover:bg-[#341f53] border border-purple-700/60 text-purple-100 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
+                className="w-full mt-3 py-2 px-3 bg-[#0e2747] hover:bg-[#153866] border border-sky-500/50 text-sky-100 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
                 title={`Ver análisis estadístico de ${pick.teams}`}
               >
                 <span>Ver Análisis Estadístico</span>

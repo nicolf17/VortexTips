@@ -25,7 +25,7 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
   countsByLeague = {},
 }) => {
   return (
-    <aside className="w-full lg:w-64 shrink-0 space-y-6 bg-[#130924]/80 p-4 rounded-2xl border border-[#2e1b4d]">
+    <aside className="w-full lg:w-64 shrink-0 space-y-6 bg-[#131b2a] p-4 rounded-2xl border border-slate-750">
       {/* Estado del Partido */}
       <div>
         <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-2">
@@ -37,8 +37,8 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             onClick={() => setSelectedStatus('ALL')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
               selectedStatus === 'ALL'
-                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm'
-                : 'text-slate-300 hover:bg-purple-950/40 hover:text-white'
+                ? 'bg-sky-600/30 text-sky-200 border border-sky-500/40 shadow-sm'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
             <span>Todos</span>
@@ -66,8 +66,8 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             onClick={() => setSelectedStatus('SCHEDULED')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
               selectedStatus === 'SCHEDULED'
-                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm'
-                : 'text-slate-300 hover:bg-purple-950/40 hover:text-white'
+                ? 'bg-sky-600/30 text-sky-200 border border-sky-500/40 shadow-sm'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
             <span>Próximos</span>
@@ -79,8 +79,8 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             onClick={() => setSelectedStatus('FINISHED')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
               selectedStatus === 'FINISHED'
-                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm'
-                : 'text-slate-300 hover:bg-purple-950/40 hover:text-white'
+                ? 'bg-sky-600/30 text-sky-200 border border-sky-500/40 shadow-sm'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
             <span>Finalizados</span>
@@ -103,8 +103,8 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
                 onClick={() => setSelectedLeague(comp.id)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm font-bold'
-                    : 'text-slate-300 hover:bg-purple-950/40 hover:text-white'
+                    ? 'bg-sky-600/30 text-sky-200 border border-sky-500/40 shadow-sm font-bold'
+                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2 truncate">

@@ -292,7 +292,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                   isFinished && (match.homeScore ?? 0) > (match.awayScore ?? 0)
                                     ? 'text-white font-bold'
                                     : 'text-slate-200'
-                                } group-hover:text-purple-300 transition-colors`}
+                                } group-hover:text-sky-300 transition-colors`}
                               >
                                 {match.homeTeam.name}
                               </span>
@@ -328,7 +328,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                   isFinished && (match.awayScore ?? 0) > (match.homeScore ?? 0)
                                     ? 'text-white font-bold'
                                     : 'text-slate-200'
-                                } group-hover:text-purple-300 transition-colors`}
+                                } group-hover:text-sky-300 transition-colors`}
                               >
                                 {match.awayTeam.name}
                               </span>
@@ -341,36 +341,36 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                           </div>
                         </div>
 
-                        {/* Status / PREVIEW badge with subdued dark purple */}
+                        {/* Status / PREVIEW badge with light blue styling */}
                         {!isLive && !isFinished && (
-                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#1a122a] border border-purple-900/50 rounded text-[10px] font-mono font-bold text-purple-300 group-hover:border-purple-700/60 transition-colors">
+                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#0c1f38] border border-sky-500/40 rounded text-[10px] font-mono font-bold text-sky-300 group-hover:border-sky-400/60 transition-colors">
                             PREVIEW
                           </div>
                         )}
                       </div>
 
-                      {/* Right Side: Exact requested Odds Columns with subdued dark purple highlighting */}
+                      {/* Right Side: Exact requested Odds Columns with light blue highlighting */}
                       <div className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
                         {/* ML (Moneyline 1X2) Box */}
                         <div
-                          className="bg-[#181329] border border-purple-900/40 rounded-lg px-2 py-1 flex items-center gap-1.5 text-[11px] font-mono text-slate-300 shadow-2xs"
+                          className="bg-[#0e223d] border border-sky-500/30 rounded-lg px-2 py-1 flex items-center gap-1.5 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title={`Cuotas 1X2 (Promedio Betano & BetPlay): Local ${homeAvg} | Empate ${drawAvg} | Visita ${awayAvg}`}
                         >
-                          <span className="text-[10px] text-purple-300/80 font-sans font-bold">1X2</span>
+                          <span className="text-[10px] text-sky-400 font-sans font-bold">1X2</span>
                           <span className="font-bold text-white">{homeAvg}</span>
-                          <span className="text-purple-900">|</span>
+                          <span className="text-slate-600">|</span>
                           <span className="text-slate-400 hidden sm:inline">{drawAvg}</span>
-                          <span className="text-purple-900 hidden sm:inline">|</span>
+                          <span className="text-slate-600 hidden sm:inline">|</span>
                           <span className="font-bold text-white">{awayAvg}</span>
                         </div>
 
-                        {/* AA (Ambos Anotan / BTTS) Box with distinctive dark purple highlight */}
+                        {/* AA (Ambos Anotan / BTTS) Box with light blue highlight */}
                         <div
-                          className="bg-[#181329] border border-purple-900/40 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
+                          className="bg-[#0e223d] border border-sky-500/30 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] font-mono text-slate-300 shadow-2xs"
                           title="Ambos Equipos Anotan (AA: Sí)"
                         >
-                          <span className="text-[10px] text-purple-300 font-sans font-bold">AA</span>
-                          <span className="font-bold text-purple-200">{aaAvg}</span>
+                          <span className="text-[10px] text-sky-400 font-sans font-bold">AA</span>
+                          <span className="font-bold text-sky-200">{aaAvg}</span>
                         </div>
 
                         {/* Corners (+8.5c) Box */}

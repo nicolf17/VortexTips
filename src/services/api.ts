@@ -99,6 +99,7 @@ export async function fetchLiveFootballMatches(dateStr?: string): Promise<Match[
           under25: raw.odds?.under25 || 2.05,
           bttsYes: raw.odds?.bttsYes || 1.70,
           bttsNo: raw.odds?.bttsNo || 2.10,
+          cornersOver85: raw.odds?.cornersOver85 || raw.odds?.betano?.cornersOver85 || 1.75,
           provider: raw.odds?.provider || 'Promedio Betano & BetPlay',
           hasRealOdds: raw.odds?.hasRealOdds ?? true,
           betano: raw.odds?.betano,

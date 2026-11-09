@@ -25,7 +25,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-950/40 via-[#140826] to-purple-950/50 border border-amber-500/30">
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-950/40 via-[#101c2e] to-sky-950/50 border border-amber-500/30">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -44,7 +44,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
 
       {/* High Card Risk Match Highlight */}
       {topDisciplineMatch && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#170a2f] border border-amber-500/40 space-y-3 shadow-lg">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#131e30] border border-amber-500/40 space-y-3 shadow-lg">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
@@ -59,7 +59,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 border-y border-[#2e1b4d]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 border-y border-slate-750">
             <div className="min-w-0 flex-1">
               <h4 className="font-extrabold text-white text-base truncate">
                 {topDisciplineMatch.homeTeam.name} vs {topDisciplineMatch.awayTeam.name} ({topDisciplineMatch.league})
@@ -71,7 +71,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
 
             <button
               onClick={() => onSelectMatch(topDisciplineMatch.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shrink-0 cursor-pointer shadow-md shadow-purple-900/40"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all shrink-0 cursor-pointer shadow-md shadow-sky-950/40"
             >
               <span>Ver Ficha del Partido</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -81,7 +81,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
       )}
 
       {/* Referees Ranking Table */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#140a28] border border-[#2e1b4d] space-y-4">
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#131e30] border border-slate-750 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <h3 className="font-extrabold text-white text-base">Ranking de Árbitros Más Tarjeteros</h3>
@@ -94,8 +94,8 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
               onClick={() => setFilterMinCards(0)}
               className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                 filterMinCards === 0
-                  ? 'bg-purple-600 text-white border-purple-400'
-                  : 'bg-[#1a0e33] border-[#2e1b4d] text-slate-400 hover:text-white'
+                  ? 'bg-sky-600 text-white border-sky-400'
+                  : 'bg-[#182337] border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
               Todos ({REFEREES_DATA.length})
@@ -105,7 +105,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
               className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                 filterMinCards === 5.0
                   ? 'bg-amber-600 text-white border-amber-400'
-                  : 'bg-[#1a0e33] border-[#2e1b4d] text-slate-400 hover:text-white'
+                  : 'bg-[#182337] border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
               Muy Estrictos (&gt; 5.0 🟨)
@@ -115,7 +115,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
 
         <div className="overflow-x-auto w-full -mx-4 sm:mx-0 px-4 sm:px-0">
           <table className="w-full text-left text-xs font-mono min-w-[640px]">
-            <thead className="bg-[#1b0d36] text-slate-400 uppercase text-[10px] border-b border-[#2e1b4d]">
+            <thead className="bg-[#101a2b] text-slate-400 uppercase text-[10px] border-b border-slate-750">
               <tr>
                 <th className="p-3 font-sans">Colegiado</th>
                 <th className="p-3 font-sans">Competición / País</th>
@@ -126,9 +126,9 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
                 <th className="p-3 font-sans">Perfil de Rigor</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2e1b4d]">
+            <tbody className="divide-y divide-slate-750">
               {filteredReferees.map((ref, idx) => (
-                <tr key={idx} className="hover:bg-[#1a0e35] transition-colors">
+                <tr key={idx} className="hover:bg-[#18253a] transition-colors">
                   <td className="p-3 font-sans font-bold text-white">{ref.name}</td>
                   <td className="p-3 font-sans text-slate-300">{ref.country}</td>
                   <td className="p-3 text-center text-slate-300">{ref.matchesCount}</td>
@@ -137,7 +137,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
                       className={`font-black px-2 py-0.5 rounded-full ${
                         ref.yellowAvg >= 5.5
                           ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                          : 'text-purple-300'
+                          : 'text-sky-300'
                       }`}
                     >
                       {ref.yellowAvg.toFixed(1)}

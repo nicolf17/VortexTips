@@ -79,7 +79,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
   return (
     <div
       onClick={handleOpen}
-      className="bg-[#172133] hover:bg-[#1b273d] rounded-2xl border border-slate-750 hover:border-violet-500/50 transition-all duration-200 p-4 sm:p-5 cursor-pointer relative overflow-hidden group shadow-sm"
+      className="bg-[#172133] hover:bg-[#1b273d] rounded-2xl border border-slate-750 hover:border-sky-500/50 transition-all duration-200 p-4 sm:p-5 cursor-pointer relative overflow-hidden group shadow-sm"
     >
       {/* Top Bar: League with flag/symbol, Stadium & Colombia Kickoff Time */}
       <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-750 text-xs">
@@ -95,8 +95,8 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
 
         <div className="flex items-center gap-2">
           {isLive ? (
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-950/90 text-purple-200 border border-purple-700/60 animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-950/90 text-sky-200 border border-sky-600/60 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
               EN VIVO {match.minute ? `${match.minute}'` : ''}
             </span>
           ) : isFinished ? (
@@ -104,7 +104,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
               Finalizado
             </span>
           ) : (
-            <span className="font-mono font-medium text-violet-300 bg-violet-950/70 border border-violet-800/50 px-2 py-0.5 rounded-md text-[11px]">
+            <span className="font-mono font-medium text-sky-300 bg-sky-950/70 border border-sky-800/50 px-2 py-0.5 rounded-md text-[11px]">
               🇨🇴 {kickoffTime}
             </span>
           )}
@@ -115,7 +115,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
       <div className="grid grid-cols-12 items-center py-4 gap-2">
         {/* Home Team */}
         <div className="col-span-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0 group-hover:border-violet-500/50 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0 group-hover:border-sky-500/50 transition-colors">
             {match.homeTeam.logo ? (
               <img
                 src={match.homeTeam.logo}
@@ -130,7 +130,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             )}
           </div>
           <div className="min-w-0">
-            <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-violet-300 transition-colors">
+            <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-sky-300 transition-colors">
               {match.homeTeam.name}
             </h4>
             <div className="flex items-center gap-1 mt-1">
@@ -171,7 +171,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
         {/* Away Team */}
         <div className="col-span-5 flex items-center justify-end gap-3 text-right">
           <div className="min-w-0">
-            <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-violet-300 transition-colors">
+            <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-sky-300 transition-colors">
               {match.awayTeam.name}
             </h4>
             <div className="flex items-center justify-end gap-1 mt-1">
@@ -194,7 +194,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
               <span className="text-[10px] text-slate-400 font-medium">Forma</span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0 group-hover:border-violet-500/50 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0 group-hover:border-sky-500/50 transition-colors">
             {match.awayTeam.logo ? (
               <img
                 src={match.awayTeam.logo}
@@ -214,8 +214,8 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
       {/* Real Odds Comparative Matrix (Betano vs BetPlay vs Promedio) */}
       <div className="mt-2 bg-[#131b2a] rounded-xl p-3 border border-slate-750">
         <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 mb-2">
-          <span className="flex items-center gap-1.5 text-violet-300">
-            <BarChart3 className="w-3.5 h-3.5 text-violet-400" />
+          <span className="flex items-center gap-1.5 text-sky-300">
+            <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
             Cuotas Reales (Betano vs BetPlay)
           </span>
           <span className="text-[10px] text-slate-400">Promedio Estadístico</span>
@@ -227,7 +227,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             <div className="text-[10px] font-bold text-slate-400 uppercase truncate">
               1 ({match.homeTeam.shortName || match.homeTeam.name.split(' ')[0]})
             </div>
-            <div className="text-sm font-extrabold text-violet-300 font-mono mt-0.5">
+            <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {homeAvg}
             </div>
             <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
@@ -263,7 +263,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             <div className="text-[10px] font-bold text-slate-400 uppercase truncate">
               2 ({match.awayTeam.shortName || match.awayTeam.name.split(' ')[0]})
             </div>
-            <div className="text-sm font-extrabold text-violet-300 font-mono mt-0.5">
+            <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {awayAvg}
             </div>
             <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
@@ -281,7 +281,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
       {/* Footer bar: Referee stats & View Analysis Action */}
       <div className="mt-3 pt-2.5 border-t border-slate-750 flex items-center justify-between text-xs">
         <div className="flex items-center gap-1.5 text-slate-400">
-          <ShieldAlert className="w-3.5 h-3.5 text-violet-400" />
+          <ShieldAlert className="w-3.5 h-3.5 text-sky-400" />
           <span className="text-[11px] font-medium">
             Árbitro: <strong className="text-slate-200">{referee.name}</strong>
           </span>
@@ -290,7 +290,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
           </span>
         </div>
 
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-violet-300 group-hover:translate-x-0.5 transition-transform">
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-sky-300 group-hover:translate-x-0.5 transition-transform">
           Ver Análisis & Estadísticas
           <ChevronRight className="w-3.5 h-3.5" />
         </span>

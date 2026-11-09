@@ -103,6 +103,30 @@ export default function App() {
     loadMatches(selectedDate);
   }, [selectedDate]);
 
+  // Silent background revalidation when user returns to tab / window focus ("cuando uno salga y vuelva ya esten las cosas al tanto")
+  useEffect(() => {
+    const handleSyncOnReturn = () => {
+      if (document.visibilityState === 'visible') {
+        const matchedDay = carouselDays.find((d) => d.label === selectedDate) || todayInfo;
+        fetchLiveFootballMatches(matchedDay.dateKey)
+          .then((fresh) => {
+            if (fresh && fresh.length > 0) {
+              setMatches(fresh);
+              setLastApiSync(getColombiaCurrentTimeStr());
+            }
+          })
+          .catch((e) => console.log('Silent sync in background:', e));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleSyncOnReturn);
+    window.addEventListener('focus', handleSyncOnReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', handleSyncOnReturn);
+      window.removeEventListener('focus', handleSyncOnReturn);
+    };
+  }, [selectedDate, carouselDays, todayInfo]);
+
   // Current day metadata object
   const currentSelectedDayObj = useMemo(() => {
     return carouselDays.find((d) => d.label === selectedDate) || todayInfo;
@@ -266,7 +290,7 @@ export default function App() {
   }, [matches, selectedDate, currentSelectedDayObj, selectedStatus, selectedLeague, searchQuery, carouselDays]);
 
   return (
-    <div className="min-h-screen bg-[#121826] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-violet-600/30 selection:text-violet-200">
+    <div className="min-h-screen bg-[#121826] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-sky-500/30 selection:text-sky-200">
       {/* Top Header: VortexTips, Live COT clock & Quick Search */}
       <Header
         onOpenSearch={() => setActiveModule('buscador')}
@@ -291,7 +315,7 @@ export default function App() {
                       onClick={() => setSelectedDate(d.label)}
                       className={`flex-1 min-w-[85px] sm:min-w-[110px] py-2 px-2.5 rounded-xl text-center transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#291a3f] text-purple-100 font-bold shadow-sm border border-purple-700/60'
+                          ? 'bg-[#0f2442] text-sky-100 font-bold shadow-sm border border-sky-500/50'
                           : 'bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                       }`}
                     >
@@ -300,7 +324,7 @@ export default function App() {
                           {d.dayName}
                         </span>
                         {d.isToday && (
-                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-[#1d122e] text-purple-200' : 'bg-slate-800/80 text-slate-300 border border-slate-700'}`}>
+                          <span className={`text-[9px] px-1 rounded font-black ${isActive ? 'bg-[#0c1d36] text-sky-300' : 'bg-slate-800/80 text-slate-300 border border-slate-700'}`}>
                             HOY
                           </span>
                         )}
@@ -345,12 +369,12 @@ export default function App() {
 
                   {/* Active filter badge if league is filtered */}
                   {selectedLeague !== 'ALL' && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#201533] border border-purple-800/60 text-xs font-bold text-purple-200 shadow-sm">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0f2442] border border-sky-500/50 text-xs font-bold text-sky-200 shadow-sm">
                       <span>{selectedLeagueObj?.icon}</span>
                       <span>{selectedLeagueObj?.name}</span>
                       <button
                         onClick={() => setSelectedLeague('ALL')}
-                        className="p-0.5 rounded hover:bg-purple-900/60 text-purple-300 hover:text-white ml-1 cursor-pointer"
+                        className="p-0.5 rounded hover:bg-sky-900/60 text-sky-300 hover:text-white ml-1 cursor-pointer"
                         title="Quitar filtro de liga"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -365,7 +389,7 @@ export default function App() {
                     onClick={() => setSelectedStatus('ALL')}
                     className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'ALL'
-                        ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
+                        ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
                         : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                     }`}
                   >
@@ -388,7 +412,7 @@ export default function App() {
                     onClick={() => setSelectedStatus('FAVORITES')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'FAVORITES'
-                        ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
+                        ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
                         : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                     }`}
                     title="Ver todos los partidos guardados en favoritos"
@@ -417,7 +441,7 @@ export default function App() {
                           onClick={() => handleSelectLeagueAction(ql.code)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             active
-                              ? 'bg-[#291a3f] text-purple-100 border border-purple-700/60 shadow-sm'
+                              ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
                               : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                           }`}
                           title={`Filtrar por ${ql.name}`}
@@ -429,7 +453,7 @@ export default function App() {
                           )}
                           <span>{ql.name}</span>
                           {matchCount > 0 && (
-                            <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-[#1e1330] text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
+                            <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-[#0c1d36] text-sky-200' : 'bg-slate-800 text-slate-400'}`}>
                               {matchCount}
                             </span>
                           )}
@@ -478,7 +502,7 @@ export default function App() {
 
               {isLoadingMatches ? (
                 <div className="p-12 text-center rounded-2xl bg-[#172133] border border-slate-750 text-xs sm:text-sm text-slate-300 flex flex-col items-center justify-center gap-2 font-bold">
-                  <RefreshCw className="w-6 h-6 animate-spin text-purple-400" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-sky-400" />
                   <span>Sincronizando partidos oficiales (Hora Colombia)...</span>
                 </div>
               ) : filteredMatches.length === 0 ? (
@@ -486,7 +510,7 @@ export default function App() {
                   <p className="font-medium text-slate-300 max-w-lg mx-auto">
                     {selectedStatus === 'FAVORITES' ? (
                       <>
-                        No tienes partidos marcados como <strong className="text-purple-200">Favoritos</strong> todavía.
+                        No tienes partidos marcados como <strong className="text-sky-300">Favoritos</strong> todavía.
                         <br className="hidden sm:inline" /> Haz clic en la estrella <span className="text-amber-400 font-bold">⭐</span> de cualquier partido en la cartelera para agregarlo aquí.
                       </>
                     ) : selectedLeague !== 'ALL' ? (
@@ -504,7 +528,7 @@ export default function App() {
                         setSelectedStatus('ALL');
                         setSearchQuery('');
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#291a3f] hover:bg-[#382356] border border-purple-700/60 text-purple-100 font-bold text-xs transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all cursor-pointer shadow-sm"
                     >
                       Ver todos los partidos ({matches.length})
                     </button>

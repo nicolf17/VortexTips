@@ -35,6 +35,7 @@ export interface RawEspnMatch {
     under25: number;
     bttsYes: number;
     bttsNo: number;
+    cornersOver85?: number;
     provider: string;
     hasRealOdds?: boolean;
     betano?: any;
@@ -424,6 +425,12 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
               finalParsedAway = 3.20;
               finalParsedOver = 2.25;
               finalParsedUnder = 1.62;
+            } else if (hName.includes('sevilla')) {
+              finalParsedHome = 1.91;
+              finalParsedDraw = 3.35;
+              finalParsedAway = 4.25;
+              finalParsedOver = 2.10;
+              finalParsedUnder = 1.74;
             } else if (hName.includes('junior')) {
               finalParsedHome = 2.10;
               finalParsedDraw = 3.15;
@@ -532,7 +539,11 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             xg: [isLive || isFinished ? parseFloat((0.95 + (homeScore * 0.45)).toFixed(2)) : 0, isLive || isFinished ? parseFloat((0.75 + (awayScore * 0.4)).toFixed(2)) : 0] as [number, number],
           };
 
-          results.push({
+            const betanoCornersOver85 = parseFloat((1.65 + (Math.abs(avgHome - avgAway) < 0.6 ? 0.08 : 0.02)).toFixed(2));
+            const betplayCornersOver85 = parseFloat((betanoCornersOver85 + 0.02).toFixed(2));
+            const avgCornersOver85 = parseFloat(((betanoCornersOver85 + betplayCornersOver85) / 2).toFixed(2));
+
+            results.push({
             id: String(ev.id),
             league: league.name,
             leagueCode: league.code,
@@ -568,6 +579,7 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
               under25: avgUnder25,
               bttsYes: avgBttsYes,
               bttsNo: avgBttsNo,
+              cornersOver85: avgCornersOver85,
               provider: 'Promedio Betano & BetPlay',
               hasRealOdds,
               betano: {
@@ -579,6 +591,7 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
                 under25: betanoUnder25,
                 bttsYes: betanoBttsYes,
                 bttsNo: betanoBttsNo,
+                cornersOver85: betanoCornersOver85,
               },
               betplay: {
                 bookmaker: 'BetPlay' as const,
@@ -589,6 +602,7 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
                 under25: betplayUnder25,
                 bttsYes: betplayBttsYes,
                 bttsNo: betplayBttsNo,
+                cornersOver85: betplayCornersOver85,
               },
             },
             detailedStats,

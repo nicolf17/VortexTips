@@ -61,7 +61,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
       <div className="bg-[#172133] rounded-2xl border border-slate-750 shadow-xl overflow-hidden text-slate-100">
         {/* Search Input Bar */}
         <div className="p-4 border-b border-slate-750 flex items-center gap-3 bg-[#131b2a]">
-          <Search className="w-5 h-5 text-violet-400 shrink-0" />
+          <Search className="w-5 h-5 text-sky-400 shrink-0" />
           <input
             type="text"
             value={searchQuery}
@@ -94,7 +94,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
             onClick={() => setActiveFilter('all')}
             className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
               activeFilter === 'all'
-                ? 'bg-violet-600 text-white'
+                ? 'bg-sky-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
@@ -104,7 +104,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
             onClick={() => setActiveFilter('players')}
             className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeFilter === 'players'
-                ? 'bg-violet-600 text-white'
+                ? 'bg-sky-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
@@ -115,7 +115,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
             onClick={() => setActiveFilter('referees')}
             className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeFilter === 'referees'
-                ? 'bg-violet-600 text-white'
+                ? 'bg-sky-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
@@ -126,7 +126,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
             onClick={() => setActiveFilter('matches')}
             className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
               activeFilter === 'matches'
-                ? 'bg-violet-600 text-white'
+                ? 'bg-sky-600 text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
           >
@@ -141,7 +141,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
           {(activeFilter === 'all' || activeFilter === 'players') && filteredResults.players.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-violet-400" />
+                <User className="w-3.5 h-3.5 text-sky-400" />
                 Jugadores Destacados
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -169,7 +169,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                         <span className="font-bold text-white text-sm truncate">
                           {player.name}
                         </span>
-                        <span className="text-[10px] font-mono text-violet-300 bg-violet-950/70 border border-violet-800/50 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-sky-300 bg-sky-950/70 border border-sky-800/50 px-1.5 py-0.5 rounded">
                           #{player.number}
                         </span>
                       </div>
@@ -178,7 +178,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
                         <span>Goles: <strong className="text-emerald-400 font-mono">{player.goals}</strong></span>
-                        <span>Asist: <strong className="text-violet-300 font-mono">{player.assists}</strong></span>
+                        <span>Asist: <strong className="text-sky-300 font-mono">{player.assists}</strong></span>
                         <span>Tiros/90: <strong className="text-slate-200 font-mono">{player.shotsPer90}</strong></span>
                       </div>
                     </div>
@@ -192,7 +192,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
           {(activeFilter === 'all' || activeFilter === 'referees') && filteredResults.referees.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-violet-400" />
+                <ShieldAlert className="w-3.5 h-3.5 text-sky-400" />
                 Cuerpo Arbitral & Métricas Disciplinarias
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -201,7 +201,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                     key={ref.name}
                     className="p-3 bg-[#131b2a] rounded-xl border border-slate-750 flex items-start gap-3"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-violet-950/80 text-violet-400 border border-violet-800/50 flex items-center justify-center font-bold text-xs shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-sky-950/80 text-sky-400 border border-sky-800/50 flex items-center justify-center font-bold text-xs shrink-0">
                       ⚖️
                     </div>
                     <div className="min-w-0 flex-1">
@@ -238,7 +238,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
           {(activeFilter === 'all' || activeFilter === 'matches') && filteredResults.matches.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-violet-400" />
+                <Calendar className="w-3.5 h-3.5 text-sky-400" />
                 Partidos Oficiales
               </h4>
               <div className="space-y-2">
@@ -248,16 +248,16 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                     <div
                       key={match.id}
                       onClick={() => onSelectMatch && onSelectMatch(match)}
-                      className="p-3 bg-[#131b2a] hover:bg-[#182337] rounded-xl border border-slate-750 hover:border-violet-500/50 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                      className="p-3 bg-[#131b2a] hover:bg-[#182337] rounded-xl border border-slate-750 hover:border-sky-500/50 transition-all cursor-pointer flex items-center justify-between gap-3 group"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-1">
                           <span>{leagueMeta.icon}</span>
                           <span className="font-semibold text-slate-300">{leagueMeta.shortName}</span>
                           <span>•</span>
-                          <span className="font-mono text-violet-300 font-semibold">🇨🇴 {formatColombia12h(match.kickoffTime)}</span>
+                          <span className="font-mono text-sky-300 font-semibold">🇨🇴 {formatColombia12h(match.kickoffTime)}</span>
                         </div>
-                        <div className="font-bold text-white text-sm group-hover:text-violet-300 transition-colors">
+                        <div className="font-bold text-white text-sm group-hover:text-sky-300 transition-colors">
                           {match.homeTeam.name} vs {match.awayTeam.name}
                         </div>
                       </div>
@@ -267,7 +267,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                           <div>1: <strong className="text-white">{match.odds?.home?.toFixed(2) || '2.10'}</strong></div>
                           <div>2: <strong className="text-white">{match.odds?.away?.toFixed(2) || '3.20'}</strong></div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-violet-400 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors" />
                       </div>
                     </div>
                   );

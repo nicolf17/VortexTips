@@ -170,10 +170,20 @@ export interface Match {
     minute: string;
     text: string;
     team?: 'home' | 'away';
+    player?: string;
+    assist?: string;
+    subIn?: string;
+    subOut?: string;
   }>;
   rosters?: {
-    home: Array<{ name: string; position: string; jersey: string }>;
-    away: Array<{ name: string; position: string; jersey: string }>;
+    formationHome?: string;
+    formationAway?: string;
+    coachHome?: string;
+    coachAway?: string;
+    home: Array<{ name: string; position: string; jersey: string; isCaptain?: boolean }>;
+    away: Array<{ name: string; position: string; jersey: string; isCaptain?: boolean }>;
+    benchHome?: Array<{ name: string; position: string; jersey: string }>;
+    benchAway?: Array<{ name: string; position: string; jersey: string }>;
   };
 }
 
