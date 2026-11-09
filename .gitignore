@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+.aistudio/artifacts/brain/7613fd81-9ace-46f5-86c1-d871348b974d/.tempmediaStorage/
+public/assets/aistudio/
