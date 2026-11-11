@@ -8,6 +8,7 @@ import { CompactLeagueMatchList } from './components/CompactLeagueMatchList';
 import { CleanMatchCard } from './components/CleanMatchCard';
 import { CompetitionsModal } from './components/CompetitionsModal';
 import { FlashscoreDetailModal } from './components/FlashscoreDetailModal';
+import { RadarAnalysisModal } from './components/RadarAnalysisModal';
 import { MobileNav } from './components/MobileNav';
 import { SearchModule } from './components/SearchModule';
 import { DisciplineModule } from './components/DisciplineModule';
@@ -68,6 +69,7 @@ export default function App() {
 
   // Modals state
   const [selectedMatchForModal, setSelectedMatchForModal] = useState<Match | null>(null);
+  const [selectedMatchForRadarModal, setSelectedMatchForRadarModal] = useState<Match | null>(null);
   const [isCompetitionsModalOpen, setIsCompetitionsModalOpen] = useState<boolean>(false);
   const [favoriteLeagues, setFavoriteLeagues] = useState<string[]>(['COL', 'UCL', 'EPL', 'ESP']);
 
@@ -84,15 +86,15 @@ export default function App() {
       const matchedDay = carouselDays.find((d) => d.label === dateLabel) || todayInfo;
       const apiDate = matchedDay.dateKey;
       const liveData = await fetchLiveFootballMatches(apiDate);
-      if (liveData && liveData.length > 0) {
+      if (liveData && Array.isArray(liveData)) {
         setMatches(liveData);
       } else {
-        setMatches(VORTEX_MATCHES);
+        setMatches([]);
       }
       setLastApiSync(getColombiaCurrentTimeStr());
     } catch (e) {
       console.error('Error fetching real matches:', e);
-      setMatches(VORTEX_MATCHES);
+      setMatches([]);
     } finally {
       setIsLoadingMatches(false);
     }
@@ -110,7 +112,7 @@ export default function App() {
         const matchedDay = carouselDays.find((d) => d.label === selectedDate) || todayInfo;
         fetchLiveFootballMatches(matchedDay.dateKey)
           .then((fresh) => {
-            if (fresh && fresh.length > 0) {
+            if (fresh && Array.isArray(fresh)) {
               setMatches(fresh);
               setLastApiSync(getColombiaCurrentTimeStr());
             }
@@ -290,7 +292,7 @@ export default function App() {
   }, [matches, selectedDate, currentSelectedDayObj, selectedStatus, selectedLeague, searchQuery, carouselDays]);
 
   return (
-    <div className="min-h-screen bg-[#121826] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-sky-500/30 selection:text-sky-200">
+    <div className="min-h-screen bg-[#080D18] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-sky-500/30 selection:text-sky-200">
       {/* Top Header: VortexTips, Live COT clock & Quick Search */}
       <Header
         onOpenSearch={() => setActiveModule('buscador')}
@@ -305,7 +307,7 @@ export default function App() {
         {activeModule === 'partidos' && (
           <div className="w-full min-w-0 space-y-4 overflow-hidden">
             {/* Dynamic 7-Day Date Carousel */}
-            <div className="bg-[#172133] rounded-2xl border border-slate-750 p-2 sm:p-2.5 shadow-sm">
+            <div className="bg-[#111D30] rounded-2xl border border-slate-750 p-2 sm:p-2.5 shadow-sm">
               <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
                 {carouselDays.map((d) => {
                   const isActive = selectedDate === d.label;
@@ -316,7 +318,7 @@ export default function App() {
                       className={`flex-1 min-w-[85px] sm:min-w-[110px] py-2 px-2.5 rounded-xl text-center transition-all cursor-pointer ${
                         isActive
                           ? 'bg-[#0f2442] text-sky-100 font-bold shadow-sm border border-sky-500/50'
-                          : 'bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
+                          : 'bg-[#19283E] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1">
@@ -338,30 +340,27 @@ export default function App() {
               </div>
             </div>
 
-            {/* Day Radar Banner: Strictly showing hottest real markets for the selected day */}
+            {/* DayRadarBanner: Strictly showing hottest real markets for the selected day */}
             <DayRadarBanner
               selectedDate={selectedDate}
-              onSelectMatchById={(id) => {
-                const m = matches.find((match) => match.id === id);
-                if (m) setSelectedMatchForModal(m);
-              }}
+              onOpenRadarAnalysis={(m) => setSelectedMatchForRadarModal(m)}
               matches={matches}
             />
 
             {/* Interactive Filters & Controls Bar */}
-            <div className="p-3.5 sm:p-4 rounded-xl bg-[#172133] border border-slate-750 shadow-sm space-y-3">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-[#111D30] border border-slate-750 shadow-sm space-y-3">
               {/* Row 1: Competition Dropdown Trigger + Status Filters */}
               <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                 {/* Competition Dropdown Trigger */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => setIsCompetitionsModalOpen(true)}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#131b2a] hover:bg-slate-800 text-white font-bold text-xs sm:text-sm border border-slate-700 hover:border-slate-600 transition-all cursor-pointer group active:scale-95 shadow-sm"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#19283E] hover:bg-slate-800 text-white font-bold text-xs sm:text-sm border border-slate-700 hover:border-slate-600 transition-all cursor-pointer group active:scale-95 shadow-sm"
                     title="Abrir menú y buscador de competiciones"
                   >
                     <Trophy className="w-4 h-4 text-slate-300 shrink-0" />
                     <span>Competiciones & Ligas</span>
-                    <span className="px-2 py-0.5 rounded-md bg-[#1a2436] text-slate-200 font-mono text-xs border border-slate-700">
+                    <span className="px-2 py-0.5 rounded-md bg-[#19283E] text-slate-200 font-mono text-xs border border-slate-700">
                       {selectedLeagueObj?.icon} {selectedLeagueObj?.name || 'Todas'}
                     </span>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
@@ -390,7 +389,7 @@ export default function App() {
                     className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'ALL'
                         ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
-                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                        : 'bg-[#19283E] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                     }`}
                   >
                     Todos ({counts.all})
@@ -401,7 +400,7 @@ export default function App() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'LIVE'
                         ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 shadow-sm'
-                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                        : 'bg-[#19283E] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                     }`}
                   >
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -413,7 +412,7 @@ export default function App() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
                       selectedStatus === 'FAVORITES'
                         ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
-                        : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                        : 'bg-[#19283E] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750'
                     }`}
                     title="Ver todos los partidos guardados en favoritos"
                   >
@@ -442,7 +441,7 @@ export default function App() {
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                             active
                               ? 'bg-[#0f2442] text-sky-100 border border-sky-500/50 shadow-sm'
-                              : 'bg-[#131b2a] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
+                              : 'bg-[#19283E] text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-750'
                           }`}
                           title={`Filtrar por ${ql.name}`}
                         >
@@ -466,7 +465,7 @@ export default function App() {
                 <button
                   onClick={() => loadMatches(selectedDate)}
                   disabled={isLoadingMatches}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#131b2a] hover:bg-slate-800 text-slate-300 hover:text-white font-bold transition-all cursor-pointer text-xs border border-slate-750 shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#19283E] hover:bg-slate-800 text-slate-300 hover:text-white font-bold transition-all cursor-pointer text-xs border border-slate-750 shrink-0"
                   title="Actualizar partidos del día"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoadingMatches ? 'animate-spin text-slate-300' : 'text-slate-400'}`} />
@@ -495,30 +494,26 @@ export default function App() {
                     </>
                   )}
                 </h3>
-                <span className="text-xs text-slate-300 font-mono font-bold bg-[#172133] px-2.5 py-1 rounded-md border border-slate-750">
+                <span className="text-xs text-slate-300 font-mono font-bold bg-[#111D30] px-2.5 py-1 rounded-md border border-slate-750">
                   {selectedStatus === 'FAVORITES' ? '⭐ Mis Favoritos' : `${currentSelectedDayObj.dayName} • ${selectedDate}`}
                 </span>
               </div>
 
               {isLoadingMatches ? (
-                <div className="p-12 text-center rounded-2xl bg-[#172133] border border-slate-750 text-xs sm:text-sm text-slate-300 flex flex-col items-center justify-center gap-2 font-bold">
+                <div className="p-12 text-center rounded-2xl bg-[#111D30] border border-slate-750 text-xs sm:text-sm text-slate-300 flex flex-col items-center justify-center gap-2 font-bold">
                   <RefreshCw className="w-6 h-6 animate-spin text-sky-400" />
                   <span>Sincronizando partidos oficiales (Hora Colombia)...</span>
                 </div>
               ) : filteredMatches.length === 0 ? (
-                <div className="p-8 sm:p-10 rounded-2xl bg-[#172133] border border-slate-750 text-center text-xs sm:text-sm text-slate-300 space-y-3">
+                <div className="p-8 sm:p-10 rounded-2xl bg-[#111D30] border border-slate-750 text-center text-xs sm:text-sm text-slate-300 space-y-3">
                   <p className="font-medium text-slate-300 max-w-lg mx-auto">
                     {selectedStatus === 'FAVORITES' ? (
                       <>
                         No tienes partidos marcados como <strong className="text-sky-300">Favoritos</strong> todavía.
                         <br className="hidden sm:inline" /> Haz clic en la estrella <span className="text-amber-400 font-bold">⭐</span> de cualquier partido en la cartelera para agregarlo aquí.
                       </>
-                    ) : selectedLeague !== 'ALL' ? (
-                      <>
-                        No hay partidos programados de <strong className="text-white">{selectedLeagueObj?.name}</strong> para la fecha seleccionada ({selectedDate}).
-                      </>
                     ) : (
-                      `No se encontraron partidos para la fecha ${selectedDate} con los filtros aplicados.`
+                      'No hay partidos disponibles para esta fecha'
                     )}
                   </p>
                   <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
@@ -531,12 +526,6 @@ export default function App() {
                       className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all cursor-pointer shadow-sm"
                     >
                       Ver todos los partidos ({matches.length})
-                    </button>
-                    <button
-                      onClick={() => setIsCompetitionsModalOpen(true)}
-                      className="px-4 py-2 rounded-xl bg-[#131b2a] hover:bg-slate-800 text-slate-200 font-bold text-xs transition-all cursor-pointer border border-slate-750"
-                    >
-                      Elegir otra liga
                     </button>
                   </div>
                 </div>
@@ -615,6 +604,13 @@ export default function App() {
         match={selectedMatchForModal}
         isOpen={Boolean(selectedMatchForModal)}
         onClose={() => setSelectedMatchForModal(null)}
+      />
+
+      {/* Radar Statistical Analysis Modal */}
+      <RadarAnalysisModal
+        match={selectedMatchForRadarModal}
+        isOpen={Boolean(selectedMatchForRadarModal)}
+        onClose={() => setSelectedMatchForRadarModal(null)}
       />
 
       {/* Mobile Bottom Navigation (Strictly Analytical, No Bet Slips) */}

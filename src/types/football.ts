@@ -121,10 +121,10 @@ export interface Match {
   leagueCode: string;
   leagueSlug?: string;
   round: string;
-  status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'SUSPENDED';
   minute?: number;
-  homeScore?: number;
-  awayScore?: number;
+  homeScore?: number | null;
+  awayScore?: number | null;
   kickoffTime: string;
   dateKey: string;
   dateFormatted: string;

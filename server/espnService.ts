@@ -5,7 +5,7 @@ export interface RawEspnMatch {
   leagueCode: string;
   leagueSlug: string;
   round: string;
-  status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'SUSPENDED';
   minute?: number;
   timeDisplay: string;
   dateKey: string;
@@ -16,7 +16,7 @@ export interface RawEspnMatch {
     name: string;
     shortName: string;
     logo: string;
-    score: number;
+    score: number | null;
     record?: string;
   };
   awayTeam: {
@@ -24,7 +24,7 @@ export interface RawEspnMatch {
     name: string;
     shortName: string;
     logo: string;
-    score: number;
+    score: number | null;
     record?: string;
   };
   odds: {
@@ -253,8 +253,10 @@ export async function fetchExactMatchStats(leagueSlug: string, eventId: string) 
 
 // Fetch real matches across all top leagues
 export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]> {
-  const dateParam = dateStr ? `?dates=${dateStr}` : '';
-  const cacheKey = `matches_${dateStr || 'default'}`;
+  const targetDate = dateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+  const formattedDateParam = targetDate.replace(/-/g, '');
+  const dateParam = formattedDateParam ? `?dates=${formattedDateParam}` : '';
+  const cacheKey = `matches_${targetDate}`;
 
   const cached = scoreboardCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < 15000) {
@@ -282,10 +284,23 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
           if (!homeComp || !awayComp) continue;
 
           const state = ev.status?.type?.state; // 'in', 'pre', 'post'
-          const statusDesc = ev.status?.type?.description || '';
-          let matchStatus: 'SCHEDULED' | 'LIVE' | 'FINISHED' = 'SCHEDULED';
-          if (state === 'in') matchStatus = 'LIVE';
-          else if (state === 'post') matchStatus = 'FINISHED';
+          const statusName = (ev.status?.type?.name || '').toLowerCase();
+          const statusDesc = (ev.status?.type?.description || '').toLowerCase();
+
+          let matchStatus: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'SUSPENDED' = 'SCHEDULED';
+          if (state === 'in') {
+            matchStatus = 'LIVE';
+          } else if (state === 'post' || statusName.includes('ft') || statusDesc.includes('final')) {
+            matchStatus = 'FINISHED';
+          } else if (statusName.includes('post') || statusDesc.includes('aplazado') || statusDesc.includes('postponed')) {
+            matchStatus = 'POSTPONED';
+          } else if (statusName.includes('canc') || statusDesc.includes('cancelado') || statusDesc.includes('cancelled')) {
+            matchStatus = 'CANCELLED';
+          } else if (statusName.includes('susp') || statusDesc.includes('suspendido') || statusDesc.includes('suspended')) {
+            matchStatus = 'SUSPENDED';
+          } else {
+            matchStatus = 'SCHEDULED';
+          }
 
           const clockDisplay = ev.status?.type?.detail || ev.status?.displayClock || statusDesc;
           const minuteNum = parseInt(String(ev.status?.displayClock || '').replace("'", ''), 10) || (matchStatus === 'LIVE' ? 35 : undefined);
@@ -512,18 +527,18 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             month: 'short',
           })} • ${kickoffHours}`;
 
-          const homeScore = parseInt(homeComp.score || '0', 10);
-          const awayScore = parseInt(awayComp.score || '0', 10);
-
           const officialRef = comp.officials?.[0]?.displayName || 'Colegiado Oficial';
 
           // Accurate stats: Do not invent stats if the match is scheduled and has not kicked off
           const isFinished = matchStatus === 'FINISHED';
           const isLive = matchStatus === 'LIVE';
 
+          const homeScore = (isLive || isFinished) ? parseInt(homeComp.score || '0', 10) : null;
+          const awayScore = (isLive || isFinished) ? parseInt(awayComp.score || '0', 10) : null;
+
           let detailedStats = {
-            shotsTotal: [isFinished ? 12 + homeScore : isLive ? 6 + homeScore : 0, isFinished ? 9 + awayScore : isLive ? 4 + awayScore : 0] as [number, number],
-            shotsOnTarget: [isFinished ? 4 + homeScore : isLive ? 2 + homeScore : 0, isFinished ? 3 + awayScore : isLive ? 2 + awayScore : 0] as [number, number],
+            shotsTotal: [isFinished ? 12 + (homeScore ?? 0) : isLive ? 6 + (homeScore ?? 0) : 0, isFinished ? 9 + (awayScore ?? 0) : isLive ? 4 + (awayScore ?? 0) : 0] as [number, number],
+            shotsOnTarget: [isFinished ? 4 + (homeScore ?? 0) : isLive ? 2 + (homeScore ?? 0) : 0, isFinished ? 3 + (awayScore ?? 0) : isLive ? 2 + (awayScore ?? 0) : 0] as [number, number],
             shotsOffTarget: [isFinished ? 5 : isLive ? 3 : 0, isFinished ? 4 : isLive ? 2 : 0] as [number, number],
             blockedShots: [isFinished ? 3 : isLive ? 1 : 0, isFinished ? 2 : isLive ? 1 : 0] as [number, number],
             possession: [isLive || isFinished ? 52 : 50, isLive || isFinished ? 48 : 50] as [number, number],
@@ -536,7 +551,7 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             offsides: [isLive || isFinished ? 1 : 0, isLive || isFinished ? 2 : 0] as [number, number],
             corners: [isLive || isFinished ? 5 : 0, isLive || isFinished ? 4 : 0] as [number, number],
             saves: [isLive || isFinished ? 2 : 0, isLive || isFinished ? 3 : 0] as [number, number],
-            xg: [isLive || isFinished ? parseFloat((0.95 + (homeScore * 0.45)).toFixed(2)) : 0, isLive || isFinished ? parseFloat((0.75 + (awayScore * 0.4)).toFixed(2)) : 0] as [number, number],
+            xg: [isLive || isFinished ? parseFloat((0.95 + ((homeScore ?? 0) * 0.45)).toFixed(2)) : 0, isLive || isFinished ? parseFloat((0.75 + ((awayScore ?? 0) * 0.4)).toFixed(2)) : 0] as [number, number],
           };
 
             const betanoCornersOver85 = parseFloat((1.65 + (Math.abs(avgHome - avgAway) < 0.6 ? 0.08 : 0.02)).toFixed(2));
@@ -623,14 +638,11 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
     })
   );
 
-  // If results for a specific date are empty or small, supplement with default live scoreboard
-  if (results.length === 0 && dateStr) {
-    const defaultMatches = await fetchRealMatches(undefined);
-    return defaultMatches;
-  }
+  // Strict filtering by targetDate (America/Bogota) with zero mock fallback mixing
+  const strictFiltered = results.filter((m) => m.dateKey === targetDate);
 
   // Pre-fetch exact boxscores for LIVE matches and the first few finished matches to ensure 100% exact stats
-  const activeOrRecent = results.filter((m) => m.status === 'LIVE' || m.status === 'FINISHED').slice(0, 10);
+  const activeOrRecent = strictFiltered.filter((m) => m.status === 'LIVE' || m.status === 'FINISHED').slice(0, 10);
   await Promise.allSettled(
     activeOrRecent.map(async (m) => {
       try {
@@ -658,6 +670,6 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
     })
   );
 
-  scoreboardCache.set(cacheKey, { data: results, timestamp: Date.now() });
-  return results;
+  scoreboardCache.set(cacheKey, { data: strictFiltered, timestamp: Date.now() });
+  return strictFiltered;
 }

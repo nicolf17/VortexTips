@@ -7,7 +7,8 @@ import { CountryFlag } from './CountryFlag';
 
 interface DayRadarBannerProps {
   selectedDate?: string;
-  onSelectMatchById: (matchId: string) => void;
+  onSelectMatchById?: (matchId: string) => void;
+  onOpenRadarAnalysis: (match: Match) => void;
   matches?: Match[];
 }
 
@@ -36,6 +37,7 @@ interface RadarPick {
 export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
   selectedDate,
   onSelectMatchById,
+  onOpenRadarAnalysis,
   matches = [],
 }) => {
   const todayInfo = getTodayTabInfo();
@@ -333,7 +335,14 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
               {/* The ONLY clickable element: Button to view statistical analysis with clean light blue styling */}
               <button
                 type="button"
-                onClick={() => onSelectMatchById(pick.matchId)}
+                onClick={() => {
+                  const m = matches.find((match) => match.id === pick.matchId);
+                  if (m) {
+                    onOpenRadarAnalysis(m);
+                  } else if (onSelectMatchById) {
+                    onSelectMatchById(pick.matchId);
+                  }
+                }}
                 className="w-full mt-3 py-2 px-3 bg-[#0e2747] hover:bg-[#153866] border border-sky-500/50 text-sky-100 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-98"
                 title={`Ver análisis estadístico de ${pick.teams}`}
               >

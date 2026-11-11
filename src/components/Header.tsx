@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#121826]/95 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-sm">
+    <header className="sticky top-0 z-30 bg-[#080D18]/95 backdrop-blur-md border-b border-slate-800 text-slate-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand / Logo - Clicking returns to Home */}
         <button
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right side: Clean, dynamic Colombia time & quick search */}
         <div className="flex items-center gap-3">
           {/* Dynamic Colombia Date & Time Badge */}
-          <div className="hidden md:flex items-center gap-2 text-xs font-medium text-slate-300 bg-[#172032] border border-slate-750 px-3 py-1.5 rounded-lg">
+          <div className="hidden md:flex items-center gap-2 text-xs font-medium text-slate-300 bg-[#111D30] border border-slate-750 px-3 py-1.5 rounded-lg">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>🇨🇴 {todayInfo.fullDate}</span>
             <span className="text-slate-600">|</span>
@@ -74,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Clean Search Trigger */}
           <button
             onClick={onOpenSearch}
-            className="flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-slate-300 bg-[#172032] hover:bg-slate-800 hover:text-white border border-slate-750 hover:border-slate-600 rounded-lg transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-2.5 px-3.5 py-1.5 text-xs font-medium text-slate-300 bg-[#111D30] hover:bg-slate-800 hover:text-white border border-slate-750 hover:border-slate-600 rounded-lg transition-all shadow-xs cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-slate-400" />
             <span className="hidden sm:inline">Buscar jugador, árbitro o club...</span>

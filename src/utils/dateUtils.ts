@@ -93,7 +93,7 @@ export function getDynamicDaysCarousel(): DayTabInfo[] {
 
     const monthStr = String(monthIdx + 1).padStart(2, '0');
     const dayStr = String(dayNum).padStart(2, '0');
-    const dateKey = `${year}${monthStr}${dayStr}`;
+    const dateKey = `${year}-${monthStr}-${dayStr}`;
 
     const monthShort = MONTH_NAMES_ES[monthIdx];
     const label = `${dayNum} ${monthShort}`;

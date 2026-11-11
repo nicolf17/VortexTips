@@ -155,15 +155,15 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
           </div>
         </div>
 
-        {/* Center: Score or VS */}
+        {/* Center: Score or PREVIEW */}
         <div className="col-span-2 text-center">
           {isLive || isFinished ? (
             <div className="inline-flex items-center justify-center px-3 py-1 bg-slate-900 border border-slate-700 text-white rounded-lg font-mono font-bold text-base shadow-inner">
               {match.homeScore ?? 0} - {match.awayScore ?? 0}
             </div>
           ) : (
-            <div className="text-slate-400 font-bold text-xs tracking-wider uppercase">
-              VS
+            <div className="inline-flex items-center justify-center px-2 py-0.5 bg-[#0c1f38] border border-sky-500/40 text-sky-300 rounded font-mono font-bold text-[10px] tracking-wider uppercase">
+              PREVIEW
             </div>
           )}
         </div>

@@ -36,7 +36,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
   const isFinished = match.status === 'FINISHED';
 
   const [activeTab, setActiveTab] = useState<
-    'events' | 'stats' | 'lineups' | 'markets' | 'odds' | 'referee' | 'h2h'
+    'events' | 'stats' | 'lineups' | 'markets' | 'referee' | 'h2h'
   >(isLive || isFinished ? 'events' : 'markets');
 
   const leagueMeta = getLeagueMeta(match.league, match.leagueCode);
@@ -311,8 +311,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 </>
               ) : (
                 <>
-                  <div className="px-3.5 py-1.5 bg-[#0f2442] text-sky-200 border border-sky-500/50 rounded-xl font-mono font-bold text-sm shadow-xs">
-                    {kickoffTime}
+                  <div className="px-3.5 py-1.5 bg-[#0f2442] text-sky-200 border border-sky-500/50 rounded-xl font-mono font-bold text-xs shadow-xs flex flex-col items-center">
+                    <span className="text-[10px] text-sky-300 font-extrabold tracking-wider">PREVIEW</span>
+                    <span className="text-white text-sm mt-0.5">{kickoffTime}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 font-medium mt-1">
                     🇨🇴 Hora Colombia
@@ -367,39 +368,32 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-1 px-5 border-b border-slate-750 bg-[#0f1725] overflow-x-auto text-xs font-semibold scrollbar-none">
-          <button
-            onClick={() => setActiveTab('events')}
-            className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'events'
-                ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            <Activity className="w-4 h-4 text-sky-400" />
-            En Vivo & Resumen
-          </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'stats'
-                ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4 text-sky-400" />
-            Estadísticas
-          </button>
-          <button
-            onClick={() => setActiveTab('lineups')}
-            className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'lineups'
-                ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 text-sky-400" />
-            Alineaciones
-          </button>
+          {isLive && (
+            <button
+              onClick={() => setActiveTab('events')}
+              className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'events'
+                  ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <Activity className="w-4 h-4 text-sky-400" />
+              En Vivo & Resumen
+            </button>
+          )}
+          {isLive && (
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'stats'
+                  ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-sky-400" />
+              Estadísticas
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('markets')}
             className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
@@ -412,15 +406,15 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
             Mercados & Cuotas
           </button>
           <button
-            onClick={() => setActiveTab('odds')}
+            onClick={() => setActiveTab('lineups')}
             className={`py-3 px-3.5 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'odds'
+              activeTab === 'lineups'
                 ? 'border-sky-500 text-sky-200 bg-[#0e223d]'
                 : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            <Scale className="w-4 h-4 text-sky-400" />
-            Comparador Betano vs BetPlay
+            <Users className="w-4 h-4 text-sky-400" />
+            {isLive ? 'Alineaciones' : 'Alineaciones Probables'}
           </button>
           <button
             onClick={() => setActiveTab('referee')}
@@ -950,73 +944,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB: ODDS COMPARISON (BETANO VS BETPLAY) */}
-          {activeTab === 'odds' && (
-            <div className="space-y-5">
-              <div className="p-4 bg-[#0e223d] rounded-xl border border-sky-500/30 text-xs text-sky-200 leading-relaxed">
-                <strong>Metodología de Cuotas Reales:</strong> Los valores reflejan la media entre los operadores regulados líderes en Colombia y Latinoamérica (Betano y BetPlay). Si algún mercado no cuenta con cotización confirmada, no se inventan valores ficticios para garantizar rigor analítico.
-              </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-750 bg-[#121c2d] text-slate-400">
-                      <th className="py-2.5 px-3 font-bold">Mercado</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Betano</th>
-                      <th className="py-2.5 px-3 font-bold text-center">BetPlay</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Promedio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-750 font-mono">
-                    <tr className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-sans font-semibold text-white">
-                        Victoria Local ({match.homeTeam.name})
-                      </td>
-                      <td className="py-2.5 px-3 text-center">{betano.home.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">{betplay.home.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center font-extrabold text-sky-300 bg-[#0e223d]/50">
-                        {homeAvg}
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-sans font-semibold text-white">Empate (X)</td>
-                      <td className="py-2.5 px-3 text-center">{betano.draw.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">{betplay.draw.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center font-extrabold text-slate-200 bg-[#0e223d]/50">
-                        {drawAvg}
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-sans font-semibold text-white">
-                        Victoria Visitante ({match.awayTeam.name})
-                      </td>
-                      <td className="py-2.5 px-3 text-center">{betano.away.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">{betplay.away.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center font-extrabold text-sky-300 bg-[#0e223d]/50">
-                        {awayAvg}
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-sans font-semibold text-white">Más de 2.5 Goles</td>
-                      <td className="py-2.5 px-3 text-center">{betano.over25.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">{betplay.over25.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center font-extrabold text-sky-300 bg-[#0e223d]/50">
-                        {((betano.over25 + betplay.over25) / 2).toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-sans font-semibold text-white">Ambos Equipos Anotan (Sí)</td>
-                      <td className="py-2.5 px-3 text-center">{betano.bttsYes.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">{betplay.bttsYes.toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center font-extrabold text-sky-300 bg-[#0e223d]/50">
-                        {((betano.bttsYes + betplay.bttsYes) / 2).toFixed(2)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* TAB: REFEREE */}
           {activeTab === 'referee' && (
