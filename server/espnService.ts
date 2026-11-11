@@ -80,27 +80,60 @@ export interface RawEspnMatch {
 }
 
 export const LEAGUES_CONFIG = [
+  // National Teams & International Competitions (Priority)
+  { slug: 'fifa.friendly', code: 'INT', name: 'Amistosos Internacionales', icon: '⚽' },
+  { slug: 'uefa.nations', code: 'UNL', name: 'UEFA Nations League', icon: '🇪🇺' },
+  { slug: 'fifa.world', code: 'WCQ', name: 'Eliminatorias Mundial / FIFA', icon: '🏆' },
+  { slug: 'conmebol.copa', code: 'COP', name: 'Copa América', icon: '🌎' },
+  { slug: 'concacaf.nations', code: 'CNL', name: 'CONCACAF Nations League', icon: '🌎' },
+  { slug: 'caf.nations', code: 'AFCON', name: 'Copa Africana de Naciones', icon: '🌍' },
+  { slug: 'afc.asian.cup', code: 'ACUP', name: 'Copa Asiática AFC', icon: '🌏' },
+
+  // Elite European Leagues & Tournaments
   { slug: 'uefa.champions', code: 'UCL', name: 'UEFA Champions League', icon: '⭐' },
+  { slug: 'uefa.europa', code: 'UEL', name: 'UEFA Europa League', icon: '🏆' },
+  { slug: 'uefa.europa.conf', code: 'UECL', name: 'UEFA Conference League', icon: '🎖️' },
   { slug: 'eng.1', code: 'EPL', name: 'Premier League', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   { slug: 'esp.1', code: 'ESP', name: 'LaLiga EA Sports', icon: '🇪🇸' },
   { slug: 'ita.1', code: 'ITA', name: 'Serie A', icon: '🇮🇹' },
   { slug: 'ger.1', code: 'GER', name: 'Bundesliga', icon: '🇩🇪' },
   { slug: 'fra.1', code: 'FRA', name: 'Ligue 1', icon: '🇫🇷' },
-  { slug: 'uefa.europa', code: 'UEL', name: 'UEFA Europa League', icon: '🏆' },
-  { slug: 'uefa.europa.conf', code: 'UECL', name: 'UEFA Conference League', icon: '🎖️' },
   { slug: 'por.1', code: 'POR', name: 'Primeira Liga', icon: '🇵🇹' },
   { slug: 'ned.1', code: 'NED', name: 'Eredivisie', icon: '🇳🇱' },
-  { slug: 'mex.1', code: 'LMX', name: 'Liga BBVA MX', icon: '🇲🇽' },
-  { slug: 'bra.1', code: 'BRA', name: 'Brasileirão Série A', icon: '🇧🇷' },
-  { slug: 'conmebol.libertadores', code: 'LIB', name: 'Copa Libertadores', icon: '🌎' },
-  { slug: 'conmebol.sudamericana', code: 'SUD', name: 'Copa Sudamericana', icon: '🛡️' },
-  { slug: 'arg.1', code: 'ARG', name: 'Liga Profesional Argentina', icon: '🇦🇷' },
-  { slug: 'usa.1', code: 'MLS', name: 'Major League Soccer', icon: '🇺🇸' },
-  { slug: 'eng.2', code: 'EFL', name: 'Championship', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   { slug: 'tur.1', code: 'TUR', name: 'Süper Lig Turquía', icon: '🇹🇷' },
   { slug: 'bel.1', code: 'BEL', name: 'Pro League Bélgica', icon: '🇧🇪' },
-  { slug: 'col.1', code: 'COL', name: 'Liga BetPlay Colombia', icon: '🇨🇴' },
+  { slug: 'sco.1', code: 'SCO', name: 'Premiership Escocia', icon: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+  { slug: 'gre.1', code: 'GRE', name: 'Super League Grecia', icon: '🇬🇷' },
+  { slug: 'aut.1', code: 'AUT', name: 'Bundesliga Austria', icon: '🇦🇹' },
+  { slug: 'sui.1', code: 'SUI', name: 'Super League Suiza', icon: '🇨🇭' },
+  { slug: 'den.1', code: 'DEN', name: 'Superliga Dinamarca', icon: '🇩🇰' },
+  { slug: 'nor.1', code: 'NOR', name: 'Eliteserien Noruega', icon: '🇳🇴' },
+  { slug: 'swe.1', code: 'SWE', name: 'Allsvenskan Suecia', icon: '🇸🇪' },
+  { slug: 'pol.1', code: 'POL', name: 'Ekstraklasa Polonia', icon: '🇵🇱' },
+  { slug: 'eng.2', code: 'EFL', name: 'Championship', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   { slug: 'esp.2', code: 'ESP2', name: 'LaLiga Hypermotion', icon: '🇪🇸' },
+
+  // South American Leagues & Tournaments
+  { slug: 'col.1', code: 'COL', name: 'Liga BetPlay Colombia', icon: '🇨🇴' },
+  { slug: 'bra.1', code: 'BRA', name: 'Brasileirão Série A', icon: '🇧🇷' },
+  { slug: 'arg.1', code: 'ARG', name: 'Liga Profesional Argentina', icon: '🇦🇷' },
+  { slug: 'uru.1', code: 'URU', name: 'Primera División Uruguay', icon: '🇺🇾' },
+  { slug: 'chi.1', code: 'CHI', name: 'Primera División Chile', icon: '🇨🇱' },
+  { slug: 'ecu.1', code: 'ECU', name: 'LigaPro Ecuador', icon: '🇪🇨' },
+  { slug: 'par.1', code: 'PAR', name: 'Primera División Paraguay', icon: '🇵🇾' },
+  { slug: 'per.1', code: 'PER', name: 'Liga 1 Perú', icon: '🇵🇪' },
+  { slug: 'conmebol.libertadores', code: 'LIB', name: 'Copa Libertadores', icon: '🌎' },
+  { slug: 'conmebol.sudamericana', code: 'SUD', name: 'Copa Sudamericana', icon: '🛡️' },
+  { slug: 'conmebol.recopa', code: 'REC', name: 'Recopa Sudamericana', icon: '🛡️' },
+
+  // Other Prominent Global Leagues
+  { slug: 'mex.1', code: 'LMX', name: 'Liga BBVA MX', icon: '🇲🇽' },
+  { slug: 'usa.1', code: 'MLS', name: 'Major League Soccer', icon: '🇺🇸' },
+  { slug: 'ksa.1', code: 'KSA', name: 'Saudi Pro League', icon: '🇸🇦' },
+  { slug: 'jpn.1', code: 'JPN', name: 'J1 League Japón', icon: '🇯🇵' },
+  { slug: 'kor.1', code: 'KOR', name: 'K League 1 Corea', icon: '🇰🇷' },
+  { slug: 'aus.1', code: 'AUS', name: 'A-League Australia', icon: '🇦🇺' },
+  { slug: 'egy.1', code: 'EGY', name: 'Premier League Egipto', icon: '🇪🇬' },
 ];
 
 function parseOddsValue(odds: any): number | null {
