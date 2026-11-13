@@ -4,6 +4,7 @@ import { Match, PlayerProfile, RefereeInfo } from '../types/football';
 import { PLAYERS_DATA, REFEREES_DATA, MOCK_MATCHES } from '../data/mockMatches';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName, matchesTeamSearchQuery } from '../utils/localization';
 
 interface SearchModuleProps {
   isOpen?: boolean;
@@ -35,7 +36,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
       players: PLAYERS_DATA.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          p.team.toLowerCase().includes(q) ||
+          matchesTeamSearchQuery(p.team, searchQuery) ||
           p.position.toLowerCase().includes(q) ||
           p.league.toLowerCase().includes(q)
       ),
@@ -46,9 +47,10 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
       ),
       matches: matches.filter(
         (m) =>
-          m.homeTeam.name.toLowerCase().includes(q) ||
-          m.awayTeam.name.toLowerCase().includes(q) ||
+          matchesTeamSearchQuery(m.homeTeam.name, searchQuery, m.homeTeam.shortName) ||
+          matchesTeamSearchQuery(m.awayTeam.name, searchQuery, m.awayTeam.shortName) ||
           m.league.toLowerCase().includes(q) ||
+          getLeagueMeta(m.league, m.leagueCode).name.toLowerCase().includes(q) ||
           (m.refereeInfo?.name && m.refereeInfo.name.toLowerCase().includes(q))
       ),
     };
@@ -174,7 +176,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                         </span>
                       </div>
                       <div className="text-xs text-slate-400 truncate">
-                        {player.team} • {player.position}
+                        {getLocalizedTeamName(player.team)} • {player.position}
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
                         <span>Goles: <strong className="text-emerald-400 font-mono">{player.goals}</strong></span>
@@ -258,7 +260,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
                           <span className="font-mono text-sky-300 font-semibold">🇨🇴 {formatColombia12h(match.kickoffTime)}</span>
                         </div>
                         <div className="font-bold text-white text-sm group-hover:text-sky-300 transition-colors">
-                          {match.homeTeam.name} vs {match.awayTeam.name}
+                          {getLocalizedTeamName(match.homeTeam.name)} vs {getLocalizedTeamName(match.awayTeam.name)}
                         </div>
                       </div>
 

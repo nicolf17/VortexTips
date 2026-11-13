@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { REFEREES_DATA } from '../data/mockMatches';
 import { Match } from '../types/football';
+import { getLocalizedTeamName } from '../utils/localization';
+import { getLeagueMeta } from '../utils/leagueUtils';
 import { ShieldAlert, AlertTriangle, Scale, Star, ArrowRight, Filter, ShieldCheck } from 'lucide-react';
 
 interface DisciplineModuleProps {
@@ -62,7 +64,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 border-y border-slate-750">
             <div className="min-w-0 flex-1">
               <h4 className="font-extrabold text-white text-base truncate">
-                {topDisciplineMatch.homeTeam.name} vs {topDisciplineMatch.awayTeam.name} ({topDisciplineMatch.league})
+                {getLocalizedTeamName(topDisciplineMatch.homeTeam.name)} vs {getLocalizedTeamName(topDisciplineMatch.awayTeam.name)} ({getLeagueMeta(topDisciplineMatch.league, topDisciplineMatch.leagueCode).shortName})
               </h4>
               <p className="text-xs text-slate-300 mt-0.5">
                 Árbitro: <strong className="text-amber-300">{topDisciplineMatch.refereeInfo?.name || 'Colegiado Oficial'}</strong> • Promedio: {topDisciplineMatch.refereeInfo?.yellowAvg || 4.8} 🟨 / partido

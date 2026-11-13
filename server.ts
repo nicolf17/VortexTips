@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
@@ -128,11 +128,10 @@ Responde con un formato limpio en markdown, con viñetas claras y negritas en la
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-4-hydrogen',
       contents: prompt,
       config: {
         systemInstruction: 'Eres GolMetrics AI, el sistema de análisis predictivo y valor matemático de apuestas de fútbol más avanzado. Redactas en español neutro, con estilo analítico y preciso.',
-        temperature: 0.4,
       },
     });
 
@@ -190,11 +189,10 @@ Sé muy estructurado, directo y utiliza viñetas.
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-4-hydrogen',
       contents: prompt,
       config: {
         systemInstruction: 'Eres el motor de combinadas inteligentes de GolMetrics AI. Priorizas siempre el valor esperado (EV positivo) y la gestión de riesgo.',
-        temperature: 0.4,
       },
     });
 

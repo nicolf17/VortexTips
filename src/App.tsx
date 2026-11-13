@@ -16,6 +16,7 @@ import { PropsRadarModule } from './components/PropsRadarModule';
 import { Footer } from './components/Footer';
 import { getTodayTabInfo, getDynamicDaysCarousel, getColombiaCurrentTimeStr } from './utils/dateUtils';
 import { getLeagueMeta } from './utils/leagueUtils';
+import { matchesTeamSearchQuery } from './utils/localization';
 import { CountryFlag } from './components/CountryFlag';
 import {
   Trophy,
@@ -266,21 +267,20 @@ export default function App() {
         }
       }
 
-      // 4. Search Query filter
+      // 4. Search Query filter (matches both original ESPN names and Spanish localized names)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const home = m.homeTeam?.name?.toLowerCase() || '';
-        const away = m.awayTeam?.name?.toLowerCase() || '';
-        const homeShort = m.homeTeam?.shortName?.toLowerCase() || '';
-        const awayShort = m.awayTeam?.shortName?.toLowerCase() || '';
+        const meta = getLeagueMeta(m.league, m.leagueCode);
         const league = m.league?.toLowerCase() || '';
+        const leagueLoc = meta.name?.toLowerCase() || '';
         const referee = m.refereeInfo?.name?.toLowerCase() || '';
+        const homeMatch = matchesTeamSearchQuery(m.homeTeam?.name, searchQuery, m.homeTeam?.shortName);
+        const awayMatch = matchesTeamSearchQuery(m.awayTeam?.name, searchQuery, m.awayTeam?.shortName);
         if (
-          !home.includes(q) &&
-          !away.includes(q) &&
-          !homeShort.includes(q) &&
-          !awayShort.includes(q) &&
+          !homeMatch &&
+          !awayMatch &&
           !league.includes(q) &&
+          !leagueLoc.includes(q) &&
           !referee.includes(q)
         ) {
           return false;

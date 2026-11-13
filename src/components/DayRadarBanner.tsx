@@ -3,6 +3,7 @@ import { Flame, ShieldCheck, ChevronRight, TrendingUp } from 'lucide-react';
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { getDynamicDaysCarousel, getTodayTabInfo, formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName } from '../utils/localization';
 import { CountryFlag } from './CountryFlag';
 
 interface DayRadarBannerProps {
@@ -102,6 +103,8 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
     for (let i = 0; i < selectedMatches.length; i++) {
       const m = selectedMatches[i];
       const leagueMeta = getLeagueMeta(m.league, m.leagueCode);
+      const homeTeamName = getLocalizedTeamName(m.homeTeam.name);
+      const awayTeamName = getLocalizedTeamName(m.awayTeam.name);
 
       const betano = m.odds?.betano || {
         home: m.odds?.home ?? 2.1,
@@ -145,7 +148,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
         fairOdd = 1.48;
         evPercent = 18.9;
         keyContext = 'H2H 4/5 con +2.5G • xG conjunto proyectado 3.25';
-        rationale = `Enfrentamientos directos con 4 de los últimos 5 partidos superando +2.5 goles. ${m.homeTeam.name} promedia ${m.homeTeam.stats.goalsScoredAvg} goles y la línea adelantada de ${m.awayTeam.name} genera constantes manos a mano.`;
+        rationale = `Enfrentamientos directos con 4 de los últimos 5 partidos superando +2.5 goles. ${homeTeamName} promedia ${m.homeTeam.stats.goalsScoredAvg} goles y la línea adelantada de ${awayTeamName} genera constantes manos a mano.`;
         if (m.keyAbsences?.home?.length || m.keyAbsences?.away?.length) {
           keyContext += ' • Bajas defensivas clave';
         }
@@ -181,7 +184,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
         fairOdd = 1.58;
         evPercent = 15.2;
         keyContext = 'Ambos obligados a sumar • Racha 5/5 anotando';
-        rationale = `Situación de tabla donde el empate perjudica a ambas escuadras. ${m.homeTeam.name} encadena 6 juegos anotando en casa y ${m.awayTeam.name} promedia ${m.awayTeam.stats.goalsScoredAvg} goles a domicilio.`;
+        rationale = `Situación de tabla donde el empate perjudica a ambas escuadras. ${homeTeamName} encadena 6 juegos anotando en casa y ${awayTeamName} promedia ${m.awayTeam.stats.goalsScoredAvg} goles a domicilio.`;
       }
 
       const avgOdd = parseFloat(((bOdd + bpOdd) / 2).toFixed(2));
@@ -193,7 +196,7 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
       picks.push({
         id: `radar-pick-${m.id}`,
         matchId: m.id,
-        teams: `${m.homeTeam.name} vs ${m.awayTeam.name}`,
+        teams: `${homeTeamName} vs ${awayTeamName}`,
         leagueName: leagueMeta.shortName,
         leagueCode: m.leagueCode,
         country: leagueMeta.country,

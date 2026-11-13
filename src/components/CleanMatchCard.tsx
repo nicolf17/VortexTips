@@ -3,6 +3,7 @@ import { Match } from '../types/football';
 import { ChevronRight, ShieldAlert, BarChart3, Percent } from 'lucide-react';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName, getLocalizedShortTeamName } from '../utils/localization';
 
 interface CleanMatchCardProps {
   match: Match;
@@ -29,6 +30,10 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
   const isFinished = match.status === 'FINISHED';
 
   const leagueMeta = getLeagueMeta(match.league, match.leagueCode);
+  const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
+  const awayTeamName = getLocalizedTeamName(match.awayTeam.name);
+  const homeTeamShort = getLocalizedShortTeamName(match.homeTeam.name, match.homeTeam.shortName);
+  const awayTeamShort = getLocalizedShortTeamName(match.awayTeam.name, match.awayTeam.shortName);
 
   const betano = match.odds?.betano || {
     home: match.odds?.home ?? 2.1,
@@ -119,19 +124,19 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             {match.homeTeam.logo ? (
               <img
                 src={match.homeTeam.logo}
-                alt={match.homeTeam.name}
+                alt={homeTeamName}
                 className="w-full h-full object-contain p-1"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
             ) : (
-              match.homeTeam.shortName || match.homeTeam.name.substring(0, 3).toUpperCase()
+              homeTeamShort || homeTeamName.substring(0, 3).toUpperCase()
             )}
           </div>
           <div className="min-w-0">
             <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-sky-300 transition-colors">
-              {match.homeTeam.name}
+              {homeTeamName}
             </h4>
             <div className="flex items-center gap-1 mt-1">
               <span className="text-[10px] text-slate-400 font-medium">Forma:</span>
@@ -172,7 +177,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
         <div className="col-span-5 flex items-center justify-end gap-3 text-right">
           <div className="min-w-0">
             <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-sky-300 transition-colors">
-              {match.awayTeam.name}
+              {awayTeamName}
             </h4>
             <div className="flex items-center justify-end gap-1 mt-1">
               <div className="flex gap-0.5">
@@ -198,14 +203,14 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             {match.awayTeam.logo ? (
               <img
                 src={match.awayTeam.logo}
-                alt={match.awayTeam.name}
+                alt={awayTeamName}
                 className="w-full h-full object-contain p-1"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
             ) : (
-              match.awayTeam.shortName || match.awayTeam.name.substring(0, 3).toUpperCase()
+              awayTeamShort || awayTeamName.substring(0, 3).toUpperCase()
             )}
           </div>
         </div>
@@ -225,7 +230,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
           {/* 1 - Home */}
           <div className="bg-[#182133] rounded-lg p-2 border border-slate-700/80 text-center">
             <div className="text-[10px] font-bold text-slate-400 uppercase truncate">
-              1 ({match.homeTeam.shortName || match.homeTeam.name.split(' ')[0]})
+              1 ({homeTeamShort || homeTeamName.split(' ')[0]})
             </div>
             <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {homeAvg}
@@ -261,7 +266,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
           {/* 2 - Away */}
           <div className="bg-[#182133] rounded-lg p-2 border border-slate-700/80 text-center">
             <div className="text-[10px] font-bold text-slate-400 uppercase truncate">
-              2 ({match.awayTeam.shortName || match.awayTeam.name.split(' ')[0]})
+              2 ({awayTeamShort || awayTeamName.split(' ')[0]})
             </div>
             <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {awayAvg}

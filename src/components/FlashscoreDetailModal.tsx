@@ -16,6 +16,7 @@ import {
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName, getLocalizedShortTeamName } from '../utils/localization';
 
 interface FlashscoreDetailModalProps {
   match: Match | null;
@@ -40,6 +41,10 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
   >(isLive || isFinished ? 'events' : 'markets');
 
   const leagueMeta = getLeagueMeta(match.league, match.leagueCode);
+  const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
+  const awayTeamName = getLocalizedTeamName(match.awayTeam.name);
+  const homeTeamShort = getLocalizedShortTeamName(match.homeTeam.name, match.homeTeam.shortName);
+  const awayTeamShort = getLocalizedShortTeamName(match.awayTeam.name, match.awayTeam.shortName);
 
   const betano = match.odds?.betano || {
     home: match.odds?.home ?? 2.1,
@@ -153,9 +158,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
     {
       type: 'goal',
       minute: "24'",
-      text: `Gol de ${match.homeTeam.name}`,
+      text: `Gol de ${homeTeamName}`,
       team: 'home' as const,
-      player: homeStarters[9]?.name || match.homeTeam.name,
+      player: homeStarters[9]?.name || homeTeamName,
       assist: homeStarters[7]?.name || 'Pase filtrado',
     },
     {
@@ -163,14 +168,14 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
       minute: "38'",
       text: 'Tarjeta Amarilla - Entrada temeraria',
       team: 'away' as const,
-      player: awayStarters[5]?.name || match.awayTeam.name,
+      player: awayStarters[5]?.name || awayTeamName,
     },
     {
       type: 'goal',
       minute: "57'",
-      text: `Gol de ${match.awayTeam.name}`,
+      text: `Gol de ${awayTeamName}`,
       team: 'away' as const,
-      player: awayStarters[9]?.name || match.awayTeam.name,
+      player: awayStarters[9]?.name || awayTeamName,
       assist: awayStarters[6]?.name || 'Centro rasante',
     },
     {
@@ -192,7 +197,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
       minute: "81'",
       text: 'Tarjeta Amarilla - Corte de contragolpe',
       team: 'home' as const,
-      player: homeStarters[1]?.name || match.homeTeam.name,
+      player: homeStarters[1]?.name || homeTeamName,
     },
   ];
 
@@ -259,19 +264,19 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 {match.homeTeam.logo ? (
                   <img
                     src={match.homeTeam.logo}
-                    alt={match.homeTeam.name}
+                    alt={homeTeamName}
                     className="w-full h-full object-contain p-2"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
                 ) : (
-                  match.homeTeam.shortName || match.homeTeam.name.substring(0, 3).toUpperCase()
+                  homeTeamShort || homeTeamName.substring(0, 3).toUpperCase()
                 )}
               </div>
               <div className="text-center sm:text-left min-w-0">
                 <h3 className="text-base sm:text-lg font-extrabold text-white leading-tight truncate">
-                  {match.homeTeam.name}
+                  {homeTeamName}
                 </h3>
                 <div className="flex items-center justify-center sm:justify-start gap-1 mt-1 text-xs text-slate-400">
                   <span>Forma:</span>
@@ -326,7 +331,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
             <div className="col-span-5 flex flex-col-reverse items-center sm:flex-row sm:items-center sm:justify-end gap-3 text-center sm:text-right">
               <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-extrabold text-white leading-tight truncate">
-                  {match.awayTeam.name}
+                  {awayTeamName}
                 </h3>
                 <div className="flex items-center justify-center sm:justify-end gap-1 mt-1 text-xs text-slate-400">
                   <div className="flex gap-0.5">
@@ -352,14 +357,14 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 {match.awayTeam.logo ? (
                   <img
                     src={match.awayTeam.logo}
-                    alt={match.awayTeam.name}
+                    alt={awayTeamName}
                     className="w-full h-full object-contain p-2"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
                 ) : (
-                  match.awayTeam.shortName || match.awayTeam.name.substring(0, 3).toUpperCase()
+                  awayTeamShort || awayTeamName.substring(0, 3).toUpperCase()
                 )}
               </div>
             </div>
@@ -494,7 +499,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                                 {ev.minute}
                               </span>
                               <span className="text-[10px] font-semibold text-slate-400">
-                                {isHome ? match.homeTeam.name : match.awayTeam.name}
+                                {isHome ? homeTeamName : awayTeamName}
                               </span>
                             </div>
 
@@ -542,9 +547,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                     Estadísticas Detalladas en Vivo (Opta & ESPN Official)
                   </h4>
                   <div className="flex items-center gap-4 text-xs font-bold">
-                    <span className="text-sky-400">{match.homeTeam.name}</span>
+                    <span className="text-sky-400">{homeTeamName}</span>
                     <span className="text-slate-400 font-normal">vs</span>
-                    <span className="text-slate-300">{match.awayTeam.name}</span>
+                    <span className="text-slate-300">{awayTeamName}</span>
                   </div>
                 </div>
 
@@ -679,7 +684,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 <div className="bg-[#182337] rounded-xl p-4 border border-slate-750">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-750 mb-3">
                     <div>
-                      <h4 className="font-bold text-white text-sm">{match.homeTeam.name}</h4>
+                      <h4 className="font-bold text-white text-sm">{homeTeamName}</h4>
                       <span className="text-[11px] text-sky-400 font-mono font-bold">
                         Formación: {formationHome}
                       </span>
@@ -741,7 +746,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 <div className="bg-[#182337] rounded-xl p-4 border border-slate-750">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-750 mb-3">
                     <div>
-                      <h4 className="font-bold text-white text-sm">{match.awayTeam.name}</h4>
+                      <h4 className="font-bold text-white text-sm">{awayTeamName}</h4>
                       <span className="text-[11px] text-sky-400 font-mono font-bold">
                         Formación: {formationAway}
                       </span>
@@ -820,7 +825,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="bg-[#121c2d] rounded-xl p-3 border border-slate-750 text-center">
                     <div className="text-xs font-semibold text-slate-300">
-                      Victoria {match.homeTeam.name}
+                      Victoria {homeTeamName}
                     </div>
                     <div className="text-xl font-extrabold text-sky-300 font-mono mt-1">
                       {homeAvg}
@@ -852,7 +857,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
 
                   <div className="bg-[#121c2d] rounded-xl p-3 border border-slate-750 text-center">
                     <div className="text-xs font-semibold text-slate-300">
-                      Victoria {match.awayTeam.name}
+                      Victoria {awayTeamName}
                     </div>
                     <div className="text-xl font-extrabold text-sky-300 font-mono mt-1">
                       {awayAvg}
@@ -1016,13 +1021,13 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                       >
                         <span className="text-slate-400 font-mono text-[11px]">{item.date}</span>
                         <span className="font-semibold text-white">
-                          {item.home} {item.score} {item.away}
+                          {getLocalizedTeamName(item.home)} {item.score} {getLocalizedTeamName(item.away)}
                         </span>
                         <span className="text-[11px] text-slate-400">
                           {item.winner === 'home'
-                            ? `Victoria ${item.home}`
+                            ? `Victoria ${getLocalizedTeamName(item.home)}`
                             : item.winner === 'away'
-                            ? `Victoria ${item.away}`
+                            ? `Victoria ${getLocalizedTeamName(item.away)}`
                             : 'Empate'}
                         </span>
                       </div>

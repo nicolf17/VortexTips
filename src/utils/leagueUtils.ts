@@ -28,6 +28,14 @@ export const KNOWN_LEAGUES: Record<string, LeagueMeta> = {
     country: 'Inglaterra',
     isInternational: false,
   },
+  EFL: {
+    code: 'EFL',
+    name: 'Championship Inglaterra',
+    shortName: 'Championship',
+    icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    country: 'Inglaterra',
+    isInternational: false,
+  },
   ESP: {
     code: 'ESP',
     name: 'LaLiga EA Sports',
@@ -255,6 +263,30 @@ export function getLeagueMeta(leagueName?: string, leagueCode?: string): LeagueM
   }
   if (name.includes('argentina')) {
     return KNOWN_LEAGUES.ARG;
+  }
+  if (name.includes('uefa nations') || name.includes('nations league')) {
+    return name.includes('concacaf') ? KNOWN_LEAGUES.CNL : KNOWN_LEAGUES.UNL;
+  }
+  if (name.includes('friendly') || name.includes('amistoso')) {
+    return KNOWN_LEAGUES.INT;
+  }
+  if (name.includes('world cup') || name.includes('eliminatoria') || name.includes('qualif')) {
+    return KNOWN_LEAGUES.WCQ;
+  }
+  if (name.includes('championship')) {
+    return KNOWN_LEAGUES.EFL;
+  }
+  if (name.includes('eredivisie')) {
+    return KNOWN_LEAGUES.NED;
+  }
+  if (name.includes('primeira')) {
+    return KNOWN_LEAGUES.POR;
+  }
+  if (name.includes('pro league') || name.includes('bélgica') || name.includes('belgium')) {
+    return KNOWN_LEAGUES.BEL;
+  }
+  if (name.includes('süper lig') || name.includes('super lig') || name.includes('turquía') || name.includes('turkey')) {
+    return KNOWN_LEAGUES.TUR;
   }
 
   // Fallback

@@ -3,6 +3,7 @@ import { X, TrendingUp, ShieldCheck, BarChart2, ShieldAlert, History, Flame, Che
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName, getLocalizedMarketText } from '../utils/localization';
 import { CountryFlag } from './CountryFlag';
 
 interface RadarAnalysisModalProps {
@@ -22,6 +23,8 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
 
   const leagueMeta = getLeagueMeta(match.league, match.leagueCode);
   const kickoffTime = formatColombia12h(match.kickoffTime || '3:00 PM');
+  const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
+  const awayTeamName = getLocalizedTeamName(match.awayTeam.name);
 
   const betano = match.odds?.betano || {
     home: match.odds?.home ?? 2.1,
@@ -56,7 +59,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
   const valueBet = match.valueBet || {
     isDetected: true,
     market: 'Mercado de Alta Viabilidad (+EV)',
-    selection: match.homeTeam.name,
+    selection: homeTeamName,
     bookmakerOdd: betano.home || 1.95,
     fairOdd: 1.72,
     expectedValue: 12.4,
@@ -92,7 +95,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-white mt-0.5">
-                {match.homeTeam.name} vs {match.awayTeam.name}
+                {homeTeamName} vs {awayTeamName}
               </h2>
             </div>
           </div>
@@ -119,7 +122,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
                   <span>SELECCIÓN TOP DEL RADAR CON VENTAJA MATEMÁTICA (+EV)</span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-extrabold text-white mt-1">
-                  {valueBet.market} • <span className="text-sky-300">{valueBet.selection}</span>
+                  {getLocalizedMarketText(valueBet.market)} • <span className="text-sky-300">{getLocalizedTeamName(valueBet.selection)}</span>
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                   {valueBet.edgeDescription}
@@ -151,7 +154,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
               <div className="bg-[#0b101b] p-3.5 rounded-xl border border-slate-800 space-y-2">
                 <div className="font-bold text-sky-300">📈 Dinámica y xG Reciente</div>
                 <p className="text-slate-300 leading-relaxed">
-                  {match.homeTeam.name} promedia <strong className="text-white">{match.homeTeam.stats.xG} xG</strong> en sus últimos 5 partidos como local, mientras que {match.awayTeam.name} concede un promedio de <strong className="text-white">{match.awayTeam.stats.xGA} xGA</strong>. El modelo predictivo Poisson establece una probabilidad del <strong className="text-emerald-400">{impliedProb}%</strong> de acierto, superior al implícito de las casas.
+                  {homeTeamName} promedia <strong className="text-white">{match.homeTeam.stats.xG} xG</strong> en sus últimos 5 partidos como local, mientras que {awayTeamName} concede un promedio de <strong className="text-white">{match.awayTeam.stats.xGA} xGA</strong>. El modelo predictivo Poisson establece una probabilidad del <strong className="text-emerald-400">{impliedProb}%</strong> de acierto, superior al implícito de las casas.
                 </p>
               </div>
 
@@ -228,10 +231,10 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
                   onToggleSelection({
                     id: `${match.id}-${valueBet.market}`,
                     matchId: match.id,
-                    matchTitle: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-                    league: match.league,
-                    marketName: valueBet.market,
-                    selectionName: valueBet.selection,
+                    matchTitle: `${homeTeamName} vs ${awayTeamName}`,
+                    league: leagueMeta.name,
+                    marketName: getLocalizedMarketText(valueBet.market),
+                    selectionName: getLocalizedTeamName(valueBet.selection),
                     odd: valueBet.bookmakerOdd,
                     modelProb: impliedProb,
                     hasValue: true,

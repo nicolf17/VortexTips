@@ -3,6 +3,7 @@ import { Star, ChevronDown, ChevronUp, Pin, BarChart2 } from 'lucide-react';
 import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
+import { getLocalizedTeamName } from '../utils/localization';
 import { CountryFlag } from './CountryFlag';
 
 interface CompactLeagueMatchListProps {
@@ -224,6 +225,9 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                     2
                   ).toFixed(2);
 
+                  const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
+                  const awayTeamName = getLocalizedTeamName(match.awayTeam.name);
+
                   return (
                     <div
                       key={match.id}
@@ -275,7 +279,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                 {match.homeTeam.logo ? (
                                   <img
                                     src={match.homeTeam.logo}
-                                    alt={match.homeTeam.name}
+                                    alt={homeTeamName}
                                     className="w-full h-full object-contain"
                                     onError={(e) => {
                                       (e.target as HTMLElement).style.display = 'none';
@@ -294,7 +298,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                     : 'text-slate-200'
                                 } group-hover:text-sky-300 transition-colors`}
                               >
-                                {match.homeTeam.name}
+                                {homeTeamName}
                               </span>
                             </div>
                             {(isLive || isFinished) && (
@@ -311,7 +315,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                 {match.awayTeam.logo ? (
                                   <img
                                     src={match.awayTeam.logo}
-                                    alt={match.awayTeam.name}
+                                    alt={awayTeamName}
                                     className="w-full h-full object-contain"
                                     onError={(e) => {
                                       (e.target as HTMLElement).style.display = 'none';
@@ -330,7 +334,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                                     : 'text-slate-200'
                                 } group-hover:text-sky-300 transition-colors`}
                               >
-                                {match.awayTeam.name}
+                                {awayTeamName}
                               </span>
                             </div>
                             {(isLive || isFinished) && (
