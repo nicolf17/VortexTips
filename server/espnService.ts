@@ -1,4 +1,9 @@
-// Real-World Football Data Service from ESPN & Opta Official Feeds
+import type {
+  DetailedMatchStats,
+  RefereeInfo,
+} from '../src/types/football.ts';
+
+// Real-World Football Data Service from ESPN Official Feeds
 export interface RawEspnMatch {
   id: string;
   league: string;
@@ -10,6 +15,7 @@ export interface RawEspnMatch {
   timeDisplay: string;
   dateKey: string;
   dateFormatted: string;
+  kickoffUtc: string;
   stadium: string;
   homeTeam: {
     id: string;
@@ -18,6 +24,7 @@ export interface RawEspnMatch {
     logo: string;
     score: number | null;
     record?: string;
+    form: ('W' | 'D' | 'L')[];
   };
   awayTeam: {
     id: string;
@@ -26,6 +33,7 @@ export interface RawEspnMatch {
     logo: string;
     score: number | null;
     record?: string;
+    form: ('W' | 'D' | 'L')[];
   };
   odds: {
     home: number;
@@ -41,41 +49,23 @@ export interface RawEspnMatch {
     betano?: any;
     betplay?: any;
   };
-  detailedStats: {
-    shotsTotal: [number, number];
-    shotsOnTarget: [number, number];
-    shotsOffTarget: [number, number];
-    blockedShots: [number, number];
-    possession: [number, number];
-    passesTotal: [number, number];
-    passesCompleted: [number, number];
-    passAccuracy: [number, number];
-    fouls: [number, number];
-    yellowCards: [number, number];
-    redCards: [number, number];
-    offsides: [number, number];
-    corners: [number, number];
-    saves: [number, number];
-    xg: [number, number];
-  };
-  refereeInfo?: {
-    name: string;
-    country: string;
-    yellowAvg: number;
-    redTotal: number;
-    foulsAvg: number;
-    penaltiesAvg: number;
-    trendDescription: string;
-  };
+  detailedStats?: DetailedMatchStats | null;
+  refereeInfo?: RefereeInfo;
   events?: Array<{
     type: string;
     minute: string;
     text: string;
     team?: 'home' | 'away';
+    player?: string;
   }>;
   rosters?: {
-    home: Array<{ name: string; position: string; jersey: string }>;
-    away: Array<{ name: string; position: string; jersey: string }>;
+    confirmed?: boolean;
+    formationHome?: string;
+    formationAway?: string;
+    home: Array<{ name: string; position: string; jersey: string; isCaptain?: boolean }>;
+    away: Array<{ name: string; position: string; jersey: string; isCaptain?: boolean }>;
+    benchHome?: Array<{ name: string; position: string; jersey: string }>;
+    benchAway?: Array<{ name: string; position: string; jersey: string }>;
   };
 }
 
@@ -136,6 +126,14 @@ export const LEAGUES_CONFIG = [
   { slug: 'egy.1', code: 'EGY', name: 'Premier League Egipto', icon: '🇪🇬' },
 ];
 
+export function parseEspnFormString(rawForm?: string): ('W' | 'D' | 'L')[] {
+  if (!rawForm || typeof rawForm !== 'string') return [];
+  return rawForm
+    .toUpperCase()
+    .split('')
+    .filter((c): c is 'W' | 'D' | 'L' => c === 'W' || c === 'D' || c === 'L');
+}
+
 function parseOddsValue(odds: any): number | null {
   if (odds === undefined || odds === null || odds === '') return null;
   let num: number;
@@ -147,25 +145,21 @@ function parseOddsValue(odds: any): number | null {
   }
   if (isNaN(num)) return null;
 
-  // If already decimal odds (e.g. 1.57, 2.30, 3.40, 1.11, etc.)
   if (num > 1.01 && num < 60) {
     return parseFloat(num.toFixed(2));
   }
 
-  // American format odds:
   if (num > 0) {
-    return parseFloat(((num / 100) + 1).toFixed(2));
+    return parseFloat((num / 100 + 1).toFixed(2));
   } else if (num < 0) {
-    return parseFloat(((100 / Math.abs(num)) + 1).toFixed(2));
+    return parseFloat((100 / Math.abs(num) + 1).toFixed(2));
   }
   return null;
 }
 
-// In-memory cache for scoreboards (30s) and summaries (60s)
 const scoreboardCache = new Map<string, { data: RawEspnMatch[]; timestamp: number }>();
 const summaryCache = new Map<string, { data: any; timestamp: number }>();
 
-// Fetch exact real statistics, lineups and events from match summary endpoint
 export async function fetchExactMatchStats(leagueSlug: string, eventId: string) {
   const cacheKey = `${leagueSlug}_${eventId}`;
   const cached = summaryCache.get(cacheKey);
@@ -174,48 +168,93 @@ export async function fetchExactMatchStats(leagueSlug: string, eventId: string) 
   }
 
   try {
-    const url = `http://site.api.espn.com/apis/site/v2/sports/soccer/${leagueSlug}/summary?event=${eventId}`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueSlug}/summary?event=${eventId}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!res.ok) return null;
 
     const data = await res.json();
     const teams = data.boxscore?.teams;
-    if (!teams || teams.length < 2) return null;
 
-    const getStat = (teamIdx: number, statName: string): number => {
-      const st = teams[teamIdx]?.statistics?.find((s: any) => s.name === statName);
-      if (!st) return 0;
+    const getStat = (teamIdx: number, statName: string): number | undefined => {
+      const st = teams?.[teamIdx]?.statistics?.find((s: any) => s.name === statName);
+      if (!st) return undefined;
       const val = parseFloat(st.displayValue);
-      return isNaN(val) ? 0 : val;
+      return isNaN(val) ? undefined : val;
     };
 
-    const homeShots = getStat(0, 'totalShots');
-    const awayShots = getStat(1, 'totalShots');
-    const homeOnTarget = getStat(0, 'shotsOnTarget');
-    const awayOnTarget = getStat(1, 'shotsOnTarget');
-    const homePoss = getStat(0, 'possessionPct') || 50;
-    const awayPoss = getStat(1, 'possessionPct') || (100 - homePoss);
-    const homeFouls = getStat(0, 'foulsCommitted');
-    const awayFouls = getStat(1, 'foulsCommitted');
-    const homeYellows = getStat(0, 'yellowCards');
-    const awayYellows = getStat(1, 'yellowCards');
-    const homeReds = getStat(0, 'redCards');
-    const awayReds = getStat(1, 'redCards');
-    const homeOffsides = getStat(0, 'offsides');
-    const awayOffsides = getStat(1, 'offsides');
-    const homeCorners = getStat(0, 'wonCorners');
-    const awayCorners = getStat(1, 'wonCorners');
-    const homeSaves = getStat(0, 'saves');
-    const awaySaves = getStat(1, 'saves');
-    const homePasses = getStat(0, 'totalPasses');
-    const awayPasses = getStat(1, 'totalPasses');
-    const homePassAcc = getStat(0, 'accuratePasses');
-    const awayPassAcc = getStat(1, 'accuratePasses');
-    const homeBlocked = getStat(0, 'blockedShots');
-    const awayBlocked = getStat(1, 'blockedShots');
+    const hasDetailedBoxscore =
+      Array.isArray(teams) &&
+      teams.length >= 2 &&
+      (getStat(0, 'totalShots') !== undefined ||
+        getStat(0, 'possessionPct') !== undefined ||
+        getStat(0, 'wonCorners') !== undefined);
 
-    // Parse events (goals, cards, substitutions)
-    const events: Array<{ type: string; minute: string; text: string; team?: 'home' | 'away' }> = [];
+    let detailedStats: DetailedMatchStats | null = null;
+    if (hasDetailedBoxscore) {
+      const homeShots = getStat(0, 'totalShots') ?? 0;
+      const awayShots = getStat(1, 'totalShots') ?? 0;
+      const homeOnTarget = getStat(0, 'shotsOnTarget') ?? 0;
+      const awayOnTarget = getStat(1, 'shotsOnTarget') ?? 0;
+      const homePoss = getStat(0, 'possessionPct');
+      const awayPoss = getStat(1, 'possessionPct');
+      const homeFouls = getStat(0, 'foulsCommitted') ?? 0;
+      const awayFouls = getStat(1, 'foulsCommitted') ?? 0;
+      const homeYellows = getStat(0, 'yellowCards') ?? 0;
+      const awayYellows = getStat(1, 'yellowCards') ?? 0;
+      const homeReds = getStat(0, 'redCards') ?? 0;
+      const awayReds = getStat(1, 'redCards') ?? 0;
+      const homeOffsides = getStat(0, 'offsides') ?? 0;
+      const awayOffsides = getStat(1, 'offsides') ?? 0;
+      const homeCorners = getStat(0, 'wonCorners') ?? 0;
+      const awayCorners = getStat(1, 'wonCorners') ?? 0;
+      const homeSaves = getStat(0, 'saves') ?? 0;
+      const awaySaves = getStat(1, 'saves') ?? 0;
+      const homePasses = getStat(0, 'totalPasses') ?? 0;
+      const awayPasses = getStat(1, 'totalPasses') ?? 0;
+      const homePassAcc = getStat(0, 'accuratePasses') ?? 0;
+      const awayPassAcc = getStat(1, 'accuratePasses') ?? 0;
+      const homeBlocked = getStat(0, 'blockedShots') ?? 0;
+      const awayBlocked = getStat(1, 'blockedShots') ?? 0;
+
+      // Only populate xG if ESPN explicitly provides expectedGoals (never synthesize it!)
+      const homeXg = getStat(0, 'expectedGoals');
+      const awayXg = getStat(1, 'expectedGoals');
+
+      detailedStats = {
+        shotsTotal: [homeShots, awayShots],
+        shotsOnTarget: [homeOnTarget, awayOnTarget],
+        shotsOffTarget: [
+          Math.max(0, homeShots - homeOnTarget - homeBlocked),
+          Math.max(0, awayShots - awayOnTarget - awayBlocked),
+        ],
+        blockedShots: [homeBlocked, awayBlocked],
+        possession:
+          homePoss !== undefined && awayPoss !== undefined
+            ? [Math.round(homePoss), Math.round(awayPoss)]
+            : undefined,
+        passesTotal: homePasses > 0 || awayPasses > 0 ? [homePasses, awayPasses] : undefined,
+        passesCompleted: homePassAcc > 0 || awayPassAcc > 0 ? [homePassAcc, awayPassAcc] : undefined,
+        passAccuracy:
+          homePasses > 0 && awayPasses > 0
+            ? [
+                Math.round((homePassAcc / homePasses) * 100),
+                Math.round((awayPassAcc / awayPasses) * 100),
+              ]
+            : undefined,
+        fouls: [homeFouls, awayFouls],
+        yellowCards: [homeYellows, awayYellows],
+        redCards: [homeReds, awayReds],
+        offsides: [homeOffsides, awayOffsides],
+        corners: [homeCorners, awayCorners],
+        saves: [homeSaves, awaySaves],
+        xg: homeXg !== undefined && awayXg !== undefined ? [homeXg, awayXg] : null,
+        source: 'ESPN Summary Boxscore',
+      };
+    }
+
+    const homeTeamId = teams?.[0]?.team?.id || data.header?.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.id;
+
+    const events: Array<{ type: string; minute: string; text: string; team?: 'home' | 'away'; player?: string }> = [];
     if (Array.isArray(data.keyEvents)) {
       data.keyEvents.forEach((ev: any) => {
         if (ev.type?.text && ev.text) {
@@ -223,57 +262,71 @@ export async function fetchExactMatchStats(leagueSlug: string, eventId: string) 
             type: ev.type.text,
             minute: ev.clock?.displayValue || '',
             text: ev.text,
-            team: ev.team?.id === teams[0]?.team?.id ? 'home' : 'away',
+            team: ev.team?.id && homeTeamId ? (String(ev.team.id) === String(homeTeamId) ? 'home' : 'away') : undefined,
+            player: ev.participants?.[0]?.athlete?.displayName,
           });
         }
       });
     }
 
-    // Parse lineups/rosters
-    let rosters: { home: any[]; away: any[] } | undefined = undefined;
+    let rosters: RawEspnMatch['rosters'] = undefined;
     if (Array.isArray(data.rosters) && data.rosters.length >= 2) {
-      rosters = {
-        home: (data.rosters[0]?.roster || []).slice(0, 11).map((p: any) => ({
-          name: p.athlete?.displayName || p.athlete?.shortName || 'Jugador',
-          position: p.position?.displayName || p.position?.abbreviation || 'Titular',
-          jersey: p.jersey || '-',
-        })),
-        away: (data.rosters[1]?.roster || []).slice(0, 11).map((p: any) => ({
-          name: p.athlete?.displayName || p.athlete?.shortName || 'Jugador',
-          position: p.position?.displayName || p.position?.abbreviation || 'Titular',
-          jersey: p.jersey || '-',
-        })),
-      };
+      const homeCompRoster = data.rosters.find((r: any) => r.homeAway === 'home') || data.rosters[0];
+      const awayCompRoster = data.rosters.find((r: any) => r.homeAway === 'away') || data.rosters[1];
+      const mapPlayers = (arr: any[], startersOnly: boolean) =>
+        arr
+          .filter((p: any) => (startersOnly ? p.starter === true : p.starter === false))
+          .map((p: any) => ({
+            name: p.athlete?.displayName || p.athlete?.shortName || 'Jugador',
+            position: p.position?.abbreviation || p.position?.displayName || '',
+            jersey: p.jersey || '-',
+            isCaptain: Boolean(p.captain),
+          }));
+
+      const hList = homeCompRoster?.roster || [];
+      const aList = awayCompRoster?.roster || [];
+      const hStarters = hList.some((p: any) => typeof p.starter === 'boolean')
+        ? mapPlayers(hList, true)
+        : hList.slice(0, 11).map((p: any) => ({
+            name: p.athlete?.displayName || p.athlete?.shortName || 'Jugador',
+            position: p.position?.abbreviation || p.position?.displayName || '',
+            jersey: p.jersey || '-',
+          }));
+      const aStarters = aList.some((p: any) => typeof p.starter === 'boolean')
+        ? mapPlayers(aList, true)
+        : aList.slice(0, 11).map((p: any) => ({
+            name: p.athlete?.displayName || p.athlete?.shortName || 'Jugador',
+            position: p.position?.abbreviation || p.position?.displayName || '',
+            jersey: p.jersey || '-',
+          }));
+      const hBench = hList.some((p: any) => typeof p.starter === 'boolean') ? mapPlayers(hList, false) : [];
+      const aBench = aList.some((p: any) => typeof p.starter === 'boolean') ? mapPlayers(aList, false) : [];
+
+      if (hStarters.length > 0 || aStarters.length > 0) {
+        rosters = {
+          confirmed: true,
+          formationHome: homeCompRoster?.formation,
+          formationAway: awayCompRoster?.formation,
+          home: hStarters,
+          away: aStarters,
+          benchHome: hBench,
+          benchAway: aBench,
+        };
+      }
     }
 
+    const officialName =
+      data.gameInfo?.officials?.[0]?.displayName ||
+      data.header?.competitions?.[0]?.officials?.[0]?.displayName ||
+      undefined;
+
     const result = {
-      detailedStats: {
-        shotsTotal: [homeShots, awayShots] as [number, number],
-        shotsOnTarget: [homeOnTarget, awayOnTarget] as [number, number],
-        shotsOffTarget: [Math.max(0, homeShots - homeOnTarget - homeBlocked), Math.max(0, awayShots - awayOnTarget - awayBlocked)] as [number, number],
-        blockedShots: [homeBlocked, awayBlocked] as [number, number],
-        possession: [Math.round(homePoss), Math.round(awayPoss)] as [number, number],
-        passesTotal: [homePasses, awayPasses] as [number, number],
-        passesCompleted: [homePassAcc, awayPassAcc] as [number, number],
-        passAccuracy: [
-          homePasses > 0 ? Math.round((homePassAcc / homePasses) * 100) : 82,
-          awayPasses > 0 ? Math.round((awayPassAcc / awayPasses) * 100) : 80,
-        ] as [number, number],
-        fouls: [homeFouls, awayFouls] as [number, number],
-        yellowCards: [homeYellows, awayYellows] as [number, number],
-        redCards: [homeReds, awayReds] as [number, number],
-        offsides: [homeOffsides, awayOffsides] as [number, number],
-        corners: [homeCorners, awayCorners] as [number, number],
-        saves: [homeSaves, awaySaves] as [number, number],
-        xg: [
-          parseFloat((0.15 + (homeOnTarget * 0.32) + (homeShots * 0.05)).toFixed(2)),
-          parseFloat((0.15 + (awayOnTarget * 0.32) + (awayShots * 0.05)).toFixed(2)),
-        ] as [number, number],
-      },
+      detailedStats,
       events,
       rosters,
-      referee: data.gameInfo?.officials?.[0]?.displayName,
+      referee: officialName,
       venue: data.gameInfo?.venue?.fullName,
+      rawSummary: data,
     };
 
     summaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
@@ -284,7 +337,6 @@ export async function fetchExactMatchStats(leagueSlug: string, eventId: string) 
   }
 }
 
-// Fetch real matches across all top leagues
 export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]> {
   const targetDate = dateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
   const formattedDateParam = targetDate.replace(/-/g, '');
@@ -297,11 +349,12 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
   }
 
   const results: RawEspnMatch[] = [];
+  const fetchedAt = new Date().toISOString();
 
   await Promise.allSettled(
     LEAGUES_CONFIG.map(async (league) => {
       try {
-        const url = `http://site.api.espn.com/apis/site/v2/sports/soccer/${league.slug}/scoreboard${dateParam}`;
+        const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league.slug}/scoreboard${dateParam}`;
         const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         if (!res.ok) return;
 
@@ -316,11 +369,11 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
           const awayComp = comp.competitors?.find((c: any) => c.homeAway === 'away');
           if (!homeComp || !awayComp) continue;
 
-          const state = ev.status?.type?.state; // 'in', 'pre', 'post'
+          const state = ev.status?.type?.state;
           const statusName = (ev.status?.type?.name || '').toLowerCase();
           const statusDesc = (ev.status?.type?.description || '').toLowerCase();
 
-          let matchStatus: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'POSTPONED' | 'CANCELLED' | 'SUSPENDED' = 'SCHEDULED';
+          let matchStatus: RawEspnMatch['status'] = 'SCHEDULED';
           if (state === 'in') {
             matchStatus = 'LIVE';
           } else if (state === 'post' || statusName.includes('ft') || statusDesc.includes('final')) {
@@ -331,162 +384,57 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             matchStatus = 'CANCELLED';
           } else if (statusName.includes('susp') || statusDesc.includes('suspendido') || statusDesc.includes('suspended')) {
             matchStatus = 'SUSPENDED';
-          } else {
-            matchStatus = 'SCHEDULED';
           }
 
           const clockDisplay = ev.status?.type?.detail || ev.status?.displayClock || statusDesc;
-          const minuteNum = parseInt(String(ev.status?.displayClock || '').replace("'", ''), 10) || (matchStatus === 'LIVE' ? 35 : undefined);
+          const parsedMin = parseInt(String(ev.status?.displayClock || '').replace("'", ''), 10);
+          const minuteNum = !isNaN(parsedMin) ? parsedMin : undefined;
 
-          // Real Odds: Calculate average between Betano and BetPlay from official market lines
           const rawOdds = comp.odds?.[0];
 
-          const homeRaw = rawOdds?.moneyline?.home?.close?.odds ?? 
-                          rawOdds?.moneyline?.home?.open?.odds ?? 
-                          rawOdds?.moneyline?.home?.current?.odds ?? 
-                          rawOdds?.home?.close?.odds ?? 
-                          rawOdds?.home?.odds ?? 
-                          rawOdds?.homeOdds?.moneyLine;
+          const homeRaw =
+            rawOdds?.moneyline?.home?.close?.odds ??
+            rawOdds?.moneyline?.home?.open?.odds ??
+            rawOdds?.moneyline?.home?.current?.odds ??
+            rawOdds?.home?.close?.odds ??
+            rawOdds?.home?.odds ??
+            rawOdds?.homeOdds?.moneyLine;
 
-          const drawRaw = rawOdds?.moneyline?.draw?.close?.odds ?? 
-                          rawOdds?.moneyline?.draw?.open?.odds ?? 
-                          rawOdds?.moneyline?.draw?.current?.odds ?? 
-                          rawOdds?.draw?.close?.odds ?? 
-                          rawOdds?.draw?.odds ?? 
-                          rawOdds?.drawOdds?.moneyLine;
+          const drawRaw =
+            rawOdds?.moneyline?.draw?.close?.odds ??
+            rawOdds?.moneyline?.draw?.open?.odds ??
+            rawOdds?.moneyline?.draw?.current?.odds ??
+            rawOdds?.draw?.close?.odds ??
+            rawOdds?.draw?.odds ??
+            rawOdds?.drawOdds?.moneyLine;
 
-          const awayRaw = rawOdds?.moneyline?.away?.close?.odds ?? 
-                          rawOdds?.moneyline?.away?.open?.odds ?? 
-                          rawOdds?.moneyline?.away?.current?.odds ?? 
-                          rawOdds?.away?.close?.odds ?? 
-                          rawOdds?.away?.odds ?? 
-                          rawOdds?.awayOdds?.moneyLine;
+          const awayRaw =
+            rawOdds?.moneyline?.away?.close?.odds ??
+            rawOdds?.moneyline?.away?.open?.odds ??
+            rawOdds?.moneyline?.away?.current?.odds ??
+            rawOdds?.away?.close?.odds ??
+            rawOdds?.away?.odds ??
+            rawOdds?.awayOdds?.moneyLine;
 
-          const overRaw = rawOdds?.total?.over?.close?.odds ?? 
-                          rawOdds?.total?.over?.open?.odds ?? 
-                          rawOdds?.total?.over?.current?.odds ?? 
-                          rawOdds?.over?.close?.odds ?? 
-                          rawOdds?.over?.odds;
+          const overRaw =
+            rawOdds?.total?.over?.close?.odds ??
+            rawOdds?.total?.over?.open?.odds ??
+            rawOdds?.total?.over?.current?.odds ??
+            rawOdds?.over?.close?.odds ??
+            rawOdds?.over?.odds;
 
-          const underRaw = rawOdds?.total?.under?.close?.odds ?? 
-                           rawOdds?.total?.under?.open?.odds ?? 
-                           rawOdds?.total?.under?.current?.odds ?? 
-                           rawOdds?.under?.close?.odds ?? 
-                           rawOdds?.under?.odds;
+          const underRaw =
+            rawOdds?.total?.under?.close?.odds ??
+            rawOdds?.total?.under?.open?.odds ??
+            rawOdds?.total?.under?.current?.odds ??
+            rawOdds?.under?.close?.odds ??
+            rawOdds?.under?.odds;
 
           let finalParsedHome = parseOddsValue(homeRaw);
           let finalParsedDraw = parseOddsValue(drawRaw);
           let finalParsedAway = parseOddsValue(awayRaw);
           let finalParsedOver = parseOddsValue(overRaw);
           let finalParsedUnder = parseOddsValue(underRaw);
-
-          if (!finalParsedHome) {
-            const hName = `${homeComp.team?.displayName || ''} ${homeComp.team?.name || ''} ${awayComp.team?.displayName || ''} ${awayComp.team?.name || ''} ${ev.name || ''}`.toLowerCase();
-            const aName = hName;
-            if (hName.includes('wolverhampton') || hName.includes('wolves')) {
-              finalParsedHome = 1.57;
-              finalParsedDraw = 4.30;
-              finalParsedAway = 5.75;
-              finalParsedOver = 1.80;
-              finalParsedUnder = 2.00;
-            } else if (hName.includes('paris') || hName.includes('psg')) {
-              finalParsedHome = 2.45;
-              finalParsedDraw = 4.40;
-              finalParsedAway = 2.45;
-              finalParsedOver = 1.76;
-              finalParsedUnder = 2.05;
-            } else if (hName.includes('roma')) {
-              finalParsedHome = 1.11;
-              finalParsedDraw = 10.00;
-              finalParsedAway = 23.00;
-              finalParsedOver = 1.45;
-              finalParsedUnder = 2.70;
-            } else if (hName.includes('manchester city')) {
-              finalParsedHome = 1.13;
-              finalParsedDraw = 9.00;
-              finalParsedAway = 18.00;
-              finalParsedOver = 1.40;
-              finalParsedUnder = 2.90;
-            } else if (hName.includes('liverpool')) {
-              finalParsedHome = 1.50;
-              finalParsedDraw = 4.70;
-              finalParsedAway = 6.00;
-              finalParsedOver = 1.65;
-              finalParsedUnder = 2.20;
-            } else if (hName.includes('fenerbahce')) {
-              finalParsedHome = 1.42;
-              finalParsedDraw = 5.25;
-              finalParsedAway = 7.00;
-              finalParsedOver = 1.60;
-              finalParsedUnder = 2.30;
-            } else if (hName.includes('dortmund') || hName.includes('sabah')) {
-              finalParsedHome = 9.50;
-              finalParsedDraw = 6.00;
-              finalParsedAway = 1.29;
-              finalParsedOver = 1.45;
-              finalParsedUnder = 2.70;
-            } else if (hName.includes('porto') || hName.includes('psv')) {
-              finalParsedHome = 1.50;
-              finalParsedDraw = 4.70;
-              finalParsedAway = 6.00;
-              finalParsedOver = 1.70;
-              finalParsedUnder = 2.10;
-            } else if (hName.includes('napoli')) {
-              finalParsedHome = 1.71;
-              finalParsedDraw = 4.10;
-              finalParsedAway = 4.60;
-              finalParsedOver = 1.75;
-              finalParsedUnder = 2.05;
-            } else if (hName.includes('stuttgart') || hName.includes('atlético') || hName.includes('atletico')) {
-              finalParsedHome = 3.35;
-              finalParsedDraw = 3.80;
-              finalParsedAway = 2.05;
-              finalParsedOver = 1.85;
-              finalParsedUnder = 1.95;
-            } else if (hName.includes('guadalajara') || hName.includes('chivas')) {
-              finalParsedHome = 1.85;
-              finalParsedDraw = 3.40;
-              finalParsedAway = 4.20;
-              finalParsedOver = 1.90;
-              finalParsedUnder = 1.90;
-            } else if (hName.includes('san luis')) {
-              finalParsedHome = 1.95;
-              finalParsedDraw = 3.40;
-              finalParsedAway = 3.90;
-              finalParsedOver = 1.85;
-              finalParsedUnder = 1.95;
-            } else if (hName.includes('vasco')) {
-              finalParsedHome = 2.40;
-              finalParsedDraw = 3.10;
-              finalParsedAway = 3.10;
-              finalParsedOver = 2.15;
-              finalParsedUnder = 1.68;
-            } else if (hName.includes('millonarios')) {
-              finalParsedHome = 2.25;
-              finalParsedDraw = 3.05;
-              finalParsedAway = 3.35;
-              finalParsedOver = 2.20;
-              finalParsedUnder = 1.65;
-            } else if (hName.includes('santa fe')) {
-              finalParsedHome = 2.35;
-              finalParsedDraw = 3.00;
-              finalParsedAway = 3.20;
-              finalParsedOver = 2.25;
-              finalParsedUnder = 1.62;
-            } else if (hName.includes('sevilla')) {
-              finalParsedHome = 1.91;
-              finalParsedDraw = 3.35;
-              finalParsedAway = 4.25;
-              finalParsedOver = 2.10;
-              finalParsedUnder = 1.74;
-            } else if (hName.includes('junior')) {
-              finalParsedHome = 2.10;
-              finalParsedDraw = 3.15;
-              finalParsedAway = 3.60;
-              finalParsedOver = 2.05;
-              finalParsedUnder = 1.75;
-            }
-          }
 
           const hasRealOdds = finalParsedHome !== null && finalParsedAway !== null;
 
@@ -515,7 +463,6 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
           let betplayBttsNo = 0;
 
           if (hasRealOdds) {
-            // Betano calculation: sharp margin aligned with market
             betanoHome = finalParsedHome!;
             betanoDraw = finalParsedDraw || parseFloat((finalParsedHome! > 2.0 ? 3.30 : 4.10).toFixed(2));
             betanoAway = finalParsedAway!;
@@ -524,7 +471,6 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             betanoBttsYes = parseFloat((betanoOver25 < 1.70 ? 1.68 : 1.92).toFixed(2));
             betanoBttsNo = parseFloat((betanoOver25 < 1.70 ? 2.15 : 1.84).toFixed(2));
 
-            // BetPlay (regulated Colombian Coljuegos margin):
             betplayHome = parseFloat((finalParsedHome! > 2.5 ? finalParsedHome! * 1.01 : finalParsedHome! * 0.99).toFixed(2));
             betplayDraw = parseFloat((betanoDraw * 0.99).toFixed(2));
             betplayAway = parseFloat((finalParsedAway! > 2.5 ? finalParsedAway! * 1.01 : finalParsedAway! * 0.99).toFixed(2));
@@ -533,7 +479,6 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             betplayBttsYes = parseFloat((betanoBttsYes * 0.99).toFixed(2));
             betplayBttsNo = parseFloat((betanoBttsNo * 1.01).toFixed(2));
 
-            // Accurate average of Betano and BetPlay:
             avgHome = parseFloat(((betanoHome + betplayHome) / 2).toFixed(2));
             avgDraw = parseFloat(((betanoDraw + betplayDraw) / 2).toFixed(2));
             avgAway = parseFloat(((betanoAway + betplayAway) / 2).toFixed(2));
@@ -543,7 +488,6 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             avgBttsNo = parseFloat(((betanoBttsNo + betplayBttsNo) / 2).toFixed(2));
           }
 
-          // Format explicitly in Colombia Time (America/Bogota, UTC-5)
           const matchDate = new Date(ev.date);
           const dateKeyFormatted = matchDate.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
           const colombiaHour = matchDate.toLocaleTimeString('es-CO', {
@@ -560,64 +504,73 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             month: 'short',
           })} • ${kickoffHours}`;
 
-          const officialRef = comp.officials?.[0]?.displayName || 'Colegiado Oficial';
+          const scoreboardRefName = comp.officials?.[0]?.displayName;
+          const refereeInfo: RefereeInfo | undefined = scoreboardRefName
+            ? {
+                name: scoreboardRefName,
+                country: league.name,
+                state: 'VERIFIED',
+                matchesCount: null,
+                yellowAvg: null,
+                redTotal: null,
+                foulsAvg: null,
+                penaltiesAvg: null,
+                trendDescription: 'Designación arbitral confirmada en feed oficial de ESPN Scoreboard.',
+                sourceMeta: {
+                  source: 'ESPN Scoreboard Officials',
+                  resourceId: String(ev.id),
+                  fetchedAt,
+                  status: 'VERIFICADO',
+                },
+              }
+            : undefined;
 
-          // Accurate stats: Do not invent stats if the match is scheduled and has not kicked off
           const isFinished = matchStatus === 'FINISHED';
           const isLive = matchStatus === 'LIVE';
 
-          const homeScore = (isLive || isFinished) ? parseInt(homeComp.score || '0', 10) : null;
-          const awayScore = (isLive || isFinished) ? parseInt(awayComp.score || '0', 10) : null;
+          const homeScore = isLive || isFinished ? parseInt(homeComp.score || '0', 10) : null;
+          const awayScore = isLive || isFinished ? parseInt(awayComp.score || '0', 10) : null;
 
-          let detailedStats = {
-            shotsTotal: [isFinished ? 12 + (homeScore ?? 0) : isLive ? 6 + (homeScore ?? 0) : 0, isFinished ? 9 + (awayScore ?? 0) : isLive ? 4 + (awayScore ?? 0) : 0] as [number, number],
-            shotsOnTarget: [isFinished ? 4 + (homeScore ?? 0) : isLive ? 2 + (homeScore ?? 0) : 0, isFinished ? 3 + (awayScore ?? 0) : isLive ? 2 + (awayScore ?? 0) : 0] as [number, number],
-            shotsOffTarget: [isFinished ? 5 : isLive ? 3 : 0, isFinished ? 4 : isLive ? 2 : 0] as [number, number],
-            blockedShots: [isFinished ? 3 : isLive ? 1 : 0, isFinished ? 2 : isLive ? 1 : 0] as [number, number],
-            possession: [isLive || isFinished ? 52 : 50, isLive || isFinished ? 48 : 50] as [number, number],
-            passesTotal: [isLive || isFinished ? 480 : 0, isLive || isFinished ? 420 : 0] as [number, number],
-            passesCompleted: [isLive || isFinished ? 405 : 0, isLive || isFinished ? 345 : 0] as [number, number],
-            passAccuracy: [isLive || isFinished ? 84 : 0, isLive || isFinished ? 82 : 0] as [number, number],
-            fouls: [isLive || isFinished ? 11 : 0, isLive || isFinished ? 13 : 0] as [number, number],
-            yellowCards: [isLive || isFinished ? 2 : 0, isLive || isFinished ? 2 : 0] as [number, number],
-            redCards: [0, 0] as [number, number],
-            offsides: [isLive || isFinished ? 1 : 0, isLive || isFinished ? 2 : 0] as [number, number],
-            corners: [isLive || isFinished ? 5 : 0, isLive || isFinished ? 4 : 0] as [number, number],
-            saves: [isLive || isFinished ? 2 : 0, isLive || isFinished ? 3 : 0] as [number, number],
-            xg: [isLive || isFinished ? parseFloat((0.95 + ((homeScore ?? 0) * 0.45)).toFixed(2)) : 0, isLive || isFinished ? parseFloat((0.75 + ((awayScore ?? 0) * 0.4)).toFixed(2)) : 0] as [number, number],
-          };
+          const betanoCornersOver85 = hasRealOdds
+            ? parseFloat((1.65 + (Math.abs(avgHome - avgAway) < 0.6 ? 0.08 : 0.02)).toFixed(2))
+            : undefined;
+          const betplayCornersOver85 = betanoCornersOver85 !== undefined ? parseFloat((betanoCornersOver85 + 0.02).toFixed(2)) : undefined;
+          const avgCornersOver85 =
+            betanoCornersOver85 !== undefined && betplayCornersOver85 !== undefined
+              ? parseFloat(((betanoCornersOver85 + betplayCornersOver85) / 2).toFixed(2))
+              : undefined;
 
-            const betanoCornersOver85 = parseFloat((1.65 + (Math.abs(avgHome - avgAway) < 0.6 ? 0.08 : 0.02)).toFixed(2));
-            const betplayCornersOver85 = parseFloat((betanoCornersOver85 + 0.02).toFixed(2));
-            const avgCornersOver85 = parseFloat(((betanoCornersOver85 + betplayCornersOver85) / 2).toFixed(2));
-
-            results.push({
+          results.push({
             id: String(ev.id),
             league: league.name,
             leagueCode: league.code,
             leagueSlug: league.slug,
-            round: comp.round || 'Jornada Regular',
+            round: comp.round?.displayName || comp.round || 'Jornada Regular',
             status: matchStatus,
             minute: minuteNum,
-            timeDisplay: matchStatus === 'LIVE' ? clockDisplay : matchStatus === 'FINISHED' ? 'Finalizado' : kickoffHours,
+            timeDisplay:
+              matchStatus === 'LIVE' ? clockDisplay : matchStatus === 'FINISHED' ? 'Finalizado' : kickoffHours,
             dateKey: dateKeyFormatted,
             dateFormatted,
-            stadium: comp.venue?.fullName || 'Estadio Oficial',
+            kickoffUtc: ev.date,
+            stadium: comp.venue?.fullName || 'Estadio por confirmar',
             homeTeam: {
-              id: homeComp.team?.id || '',
+              id: String(homeComp.team?.id || ''),
               name: homeComp.team?.displayName || 'Local',
               shortName: homeComp.team?.abbreviation || 'LOC',
               logo: homeComp.team?.logo || 'https://a.espncdn.com/i/teamlogos/soccer/500/default-team-logo.png',
               score: homeScore,
               record: homeComp.records?.[0]?.summary,
+              form: parseEspnFormString(homeComp.form),
             },
             awayTeam: {
-              id: awayComp.team?.id || '',
+              id: String(awayComp.team?.id || ''),
               name: awayComp.team?.displayName || 'Visitante',
               shortName: awayComp.team?.abbreviation || 'VIS',
               logo: awayComp.team?.logo || 'https://a.espncdn.com/i/teamlogos/soccer/500/default-team-logo.png',
               score: awayScore,
               record: awayComp.records?.[0]?.summary,
+              form: parseEspnFormString(awayComp.form),
             },
             odds: {
               home: avgHome,
@@ -628,41 +581,37 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
               bttsYes: avgBttsYes,
               bttsNo: avgBttsNo,
               cornersOver85: avgCornersOver85,
-              provider: 'Promedio Betano & BetPlay',
+              provider: hasRealOdds ? 'ESPN Odds (Betano/BetPlay Ref.)' : 'Sin cuota oficial publicada',
               hasRealOdds,
-              betano: {
-                bookmaker: 'Betano' as const,
-                home: betanoHome,
-                draw: betanoDraw,
-                away: betanoAway,
-                over25: betanoOver25,
-                under25: betanoUnder25,
-                bttsYes: betanoBttsYes,
-                bttsNo: betanoBttsNo,
-                cornersOver85: betanoCornersOver85,
-              },
-              betplay: {
-                bookmaker: 'BetPlay' as const,
-                home: betplayHome,
-                draw: betplayDraw,
-                away: betplayAway,
-                over25: betplayOver25,
-                under25: betplayUnder25,
-                bttsYes: betplayBttsYes,
-                bttsNo: betplayBttsNo,
-                cornersOver85: betplayCornersOver85,
-              },
+              betano: hasRealOdds
+                ? {
+                    bookmaker: 'Betano' as const,
+                    home: betanoHome,
+                    draw: betanoDraw,
+                    away: betanoAway,
+                    over25: betanoOver25,
+                    under25: betanoUnder25,
+                    bttsYes: betanoBttsYes,
+                    bttsNo: betanoBttsNo,
+                    cornersOver85: betanoCornersOver85,
+                  }
+                : undefined,
+              betplay: hasRealOdds
+                ? {
+                    bookmaker: 'BetPlay' as const,
+                    home: betplayHome,
+                    draw: betplayDraw,
+                    away: betplayAway,
+                    over25: betplayOver25,
+                    under25: betplayUnder25,
+                    bttsYes: betplayBttsYes,
+                    bttsNo: betplayBttsNo,
+                    cornersOver85: betplayCornersOver85,
+                  }
+                : undefined,
             },
-            detailedStats,
-            refereeInfo: {
-              name: officialRef,
-              country: league.icon,
-              yellowAvg: officialRef.includes('Veríssimo') ? 6.4 : officialRef.includes('Manzano') ? 5.6 : 4.5,
-              redTotal: officialRef.includes('Veríssimo') ? 9 : 4,
-              foulsAvg: officialRef.includes('Veríssimo') ? 28.2 : 23.5,
-              penaltiesAvg: 0.35,
-              trendDescription: 'Árbitro oficial registrado en la designación federativa.',
-            },
+            detailedStats: null,
+            refereeInfo,
           });
         }
       } catch (err) {
@@ -671,10 +620,9 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
     })
   );
 
-  // Strict filtering by targetDate (America/Bogota) with zero mock fallback mixing
   const strictFiltered = results.filter((m) => m.dateKey === targetDate);
 
-  // Pre-fetch exact boxscores for LIVE matches and the first few finished matches to ensure 100% exact stats
+  // Pre-fetch real boxscores for LIVE & first few FINISHED matches (no invented stats)
   const activeOrRecent = strictFiltered.filter((m) => m.status === 'LIVE' || m.status === 'FINISHED').slice(0, 10);
   await Promise.allSettled(
     activeOrRecent.map(async (m) => {
@@ -688,17 +636,25 @@ export async function fetchRealMatches(dateStr?: string): Promise<RawEspnMatch[]
             m.refereeInfo = {
               name: exact.referee,
               country: m.league,
-              yellowAvg: 4.8,
-              redTotal: 3,
-              foulsAvg: 24.0,
-              penaltiesAvg: 0.3,
-              trendDescription: 'Colegiado oficial confirmado en acta arbitral.',
+              state: 'VERIFIED',
+              matchesCount: null,
+              yellowAvg: null,
+              redTotal: null,
+              foulsAvg: null,
+              penaltiesAvg: null,
+              trendDescription: 'Colegiado oficial confirmado en ESPN GameInfo.',
+              sourceMeta: {
+                source: 'ESPN Summary GameInfo',
+                resourceId: m.id,
+                fetchedAt,
+                status: 'VERIFICADO',
+              },
             };
           }
           if (exact.venue) m.stadium = exact.venue;
         }
-      } catch (e) {
-        // Continue with baseline
+      } catch {
+        // Keep honest empty/unavailable stats
       }
     })
   );

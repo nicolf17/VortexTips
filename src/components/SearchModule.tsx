@@ -43,7 +43,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({
       referees: REFEREES_DATA.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
-          r.country.toLowerCase().includes(q)
+          (r.country || '').toLowerCase().includes(q)
       ),
       matches: matches.filter(
         (m) =>

@@ -22,7 +22,7 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
       })[0]
     : null;
 
-  const filteredReferees = REFEREES_DATA.filter((r) => r.yellowAvg >= filterMinCards);
+  const filteredReferees = REFEREES_DATA.filter((r) => (r.yellowAvg ?? 0) >= filterMinCards);
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
@@ -67,7 +67,14 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
                 {getLocalizedTeamName(topDisciplineMatch.homeTeam.name)} vs {getLocalizedTeamName(topDisciplineMatch.awayTeam.name)} ({getLeagueMeta(topDisciplineMatch.league, topDisciplineMatch.leagueCode).shortName})
               </h4>
               <p className="text-xs text-slate-300 mt-0.5">
-                Árbitro: <strong className="text-amber-300">{topDisciplineMatch.refereeInfo?.name || 'Colegiado Oficial'}</strong> • Promedio: {topDisciplineMatch.refereeInfo?.yellowAvg || 4.8} 🟨 / partido
+                Árbitro:{' '}
+                <strong className="text-amber-300">
+                  {topDisciplineMatch.refereeInfo?.name || 'Por verificar en fuentes oficiales'}
+                </strong>
+                {topDisciplineMatch.refereeInfo?.yellowAvg !== null &&
+                topDisciplineMatch.refereeInfo?.yellowAvg !== undefined
+                  ? ` • Promedio: ${topDisciplineMatch.refereeInfo.yellowAvg} 🟨 / partido`
+                  : ''}
               </p>
             </div>
 
@@ -137,16 +144,18 @@ export const DisciplineModule: React.FC<DisciplineModuleProps> = ({ onSelectMatc
                   <td className="p-3 text-center">
                     <span
                       className={`font-black px-2 py-0.5 rounded-full ${
-                        ref.yellowAvg >= 5.5
+                        (ref.yellowAvg ?? 0) >= 5.5
                           ? 'bg-amber-950 text-amber-300 border border-amber-800'
                           : 'text-sky-300'
                       }`}
                     >
-                      {ref.yellowAvg.toFixed(1)}
+                      {ref.yellowAvg !== null && ref.yellowAvg !== undefined ? ref.yellowAvg.toFixed(1) : 'N/D'}
                     </span>
                   </td>
-                  <td className="p-3 text-center text-rose-400 font-bold">{ref.redTotal}</td>
-                  <td className="p-3 text-center text-slate-200">{ref.foulsAvg.toFixed(1)}</td>
+                  <td className="p-3 text-center text-rose-400 font-bold">{ref.redTotal ?? 'N/D'}</td>
+                  <td className="p-3 text-center text-slate-200">
+                    {ref.foulsAvg !== null && ref.foulsAvg !== undefined ? ref.foulsAvg.toFixed(1) : 'N/D'}
+                  </td>
                   <td className="p-3 font-sans text-[11px] text-slate-400 max-w-xs">{ref.trendDescription}</td>
                 </tr>
               ))}

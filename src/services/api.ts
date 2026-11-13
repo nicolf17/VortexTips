@@ -1,4 +1,4 @@
-import { Match } from '../types/football';
+import { Match, VerifiedMatchDossier } from '../types/football';
 
 export interface AnalysisResponse {
   analysis: string;
@@ -19,6 +19,8 @@ export interface RealMatchesApiResponse {
   matches: Match[];
 }
 
+const clientDossierCache = new Map<string, VerifiedMatchDossier>();
+
 export async function fetchLiveFootballMatches(dateStr?: string): Promise<Match[]> {
   try {
     const url = dateStr ? `/api/football/real-matches?date=${dateStr}` : '/api/football/real-matches';
@@ -26,157 +28,120 @@ export async function fetchLiveFootballMatches(dateStr?: string): Promise<Match[
     if (!response.ok) throw new Error('Network error');
     const data = await response.json();
     if (data.matches && Array.isArray(data.matches)) {
-      // Convert raw match data to Match type
-      return data.matches.map((raw: any) => ({
-        id: raw.id,
-        league: raw.league,
-        leagueCode: raw.leagueCode,
-        round: raw.round || 'Jornada',
-        status: raw.status || 'SCHEDULED',
-        minute: raw.minute,
-        homeScore: raw.homeTeam?.score,
-        awayScore: raw.awayTeam?.score,
-        kickoffTime: raw.timeDisplay || '19:00',
-        dateKey: raw.dateKey || '2026-10-19',
-        dateFormatted: raw.dateFormatted || 'Hoy',
-        stadium: raw.stadium || 'Estadio',
-        refereeInfo: raw.refereeInfo || {
-          name: 'Colegiado Oficial',
-          country: 'FIFA',
-          matchesCount: 22,
-          yellowAvg: 4.5,
-          redTotal: 3,
-          foulsAvg: 23.2,
-          penaltiesAvg: 0.32,
-          trendDescription: 'Árbitro oficial asignado por federación.',
-        },
-        dataIntegrity: {
-          status: 'VERIFIED' as const,
-          source: 'ESPN Live Scoreboards & Opta Official Feeds',
-          lastSync: 'En tiempo real',
-        },
-        homeTeam: {
-          name: raw.homeTeam?.name || 'Local',
-          shortName: raw.homeTeam?.shortName || 'LOC',
-          logo: raw.homeTeam?.logo || '',
-          rank: 1,
-          stats: {
-            xG: raw.detailedStats?.xg?.[0] || 1.6,
-            xGA: raw.detailedStats?.xg?.[1] || 1.1,
-            possession: raw.detailedStats?.possession?.[0] || 52,
-            shotsOnTarget: raw.detailedStats?.shotsOnTarget?.[0] || 5,
-            cornersAvg: raw.detailedStats?.corners?.[0] || 6,
-            cleanSheets: 8,
-            goalsScoredAvg: 1.8,
-            goalsConcededAvg: 1.0,
-            form: ['W', 'W', 'D', 'W', 'L'],
-            tacticalStyle: 'Presión alta y juego vertical coordinado',
+      return data.matches.map((raw: any) => {
+        const hasRealOdds = Boolean(raw.odds?.hasRealOdds && raw.odds?.home > 0);
+        const hOdd = hasRealOdds ? raw.odds.home : 0;
+        const dOdd = hasRealOdds ? raw.odds.draw : 0;
+        const aOdd = hasRealOdds ? raw.odds.away : 0;
+        const o25Odd = hasRealOdds ? raw.odds.over25 : 0;
+
+        return {
+          id: raw.id,
+          league: raw.league,
+          leagueCode: raw.leagueCode,
+          leagueSlug: raw.leagueSlug,
+          round: raw.round || 'Jornada',
+          status: raw.status || 'SCHEDULED',
+          minute: raw.minute,
+          homeScore: raw.homeTeam?.score ?? null,
+          awayScore: raw.awayTeam?.score ?? null,
+          kickoffTime: raw.timeDisplay || 'Por confirmar',
+          dateKey: raw.dateKey || '',
+          dateFormatted: raw.dateFormatted || '',
+          stadium: raw.stadium || 'Estadio por confirmar',
+          refereeInfo: raw.refereeInfo || undefined,
+          dataIntegrity: {
+            status: 'VERIFIED' as const,
+            validationStatus: 'VERIFICADO' as const,
+            source: 'ESPN Live Scoreboards',
+            lastSync: data.timestamp || new Date().toISOString(),
           },
-        },
-        awayTeam: {
-          name: raw.awayTeam?.name || 'Visitante',
-          shortName: raw.awayTeam?.shortName || 'VIS',
-          logo: raw.awayTeam?.logo || '',
-          rank: 2,
-          stats: {
-            xG: raw.detailedStats?.xg?.[1] || 1.2,
-            xGA: raw.detailedStats?.xg?.[0] || 1.4,
-            possession: raw.detailedStats?.possession?.[1] || 48,
-            shotsOnTarget: raw.detailedStats?.shotsOnTarget?.[1] || 4,
-            cornersAvg: raw.detailedStats?.corners?.[1] || 4,
-            cleanSheets: 6,
-            goalsScoredAvg: 1.4,
-            goalsConcededAvg: 1.2,
-            form: ['L', 'W', 'D', 'L', 'W'],
-            tacticalStyle: 'Transiciones rápidas y repliegue defensivo',
-          },
-        },
-        odds: {
-          home: raw.odds?.home || 1.95,
-          draw: raw.odds?.draw || 3.35,
-          away: raw.odds?.away || 3.80,
-          over25: raw.odds?.over25 || 1.75,
-          under25: raw.odds?.under25 || 2.05,
-          bttsYes: raw.odds?.bttsYes || 1.70,
-          bttsNo: raw.odds?.bttsNo || 2.10,
-          cornersOver85: raw.odds?.cornersOver85 || raw.odds?.betano?.cornersOver85 || 1.75,
-          provider: raw.odds?.provider || 'Promedio Betano & BetPlay',
-          hasRealOdds: raw.odds?.hasRealOdds ?? true,
-          betano: raw.odds?.betano,
-          betplay: raw.odds?.betplay,
-          homeMove: 'stable',
-          awayMove: 'stable',
-          bookmakers: [
-            {
-              name: 'Betano',
-              home: raw.odds?.betano?.home || raw.odds?.home || 1.95,
-              draw: raw.odds?.betano?.draw || raw.odds?.draw || 3.35,
-              away: raw.odds?.betano?.away || raw.odds?.away || 3.80,
-              over25: raw.odds?.betano?.over25 || raw.odds?.over25 || 1.75,
+          homeTeam: {
+            id: raw.homeTeam?.id ? String(raw.homeTeam.id) : undefined,
+            name: raw.homeTeam?.name || 'Local',
+            shortName: raw.homeTeam?.shortName || 'LOC',
+            logo: raw.homeTeam?.logo || '',
+            rank: null,
+            record: raw.homeTeam?.record,
+            stats: {
+              xG: raw.detailedStats?.xg?.[0] ?? null,
+              xGA: raw.detailedStats?.xg?.[1] ?? null,
+              possession: raw.detailedStats?.possession?.[0] ?? null,
+              shotsOnTarget: raw.detailedStats?.shotsOnTarget?.[0] ?? null,
+              cornersAvg: raw.detailedStats?.corners?.[0] ?? null,
+              cleanSheets: null,
+              goalsScoredAvg: null,
+              goalsConcededAvg: null,
+              form: Array.isArray(raw.homeTeam?.form) ? raw.homeTeam.form : [],
+              isModelDerived: false,
             },
-            {
-              name: 'BetPlay',
-              home: raw.odds?.betplay?.home || Number(((raw.odds?.home || 1.95) * 0.98).toFixed(2)),
-              draw: raw.odds?.betplay?.draw || Number(((raw.odds?.draw || 3.35) * 0.99).toFixed(2)),
-              away: raw.odds?.betplay?.away || Number(((raw.odds?.away || 3.80) * 1.01).toFixed(2)),
-              over25: raw.odds?.betplay?.over25 || Number(((raw.odds?.over25 || 1.75) * 0.99).toFixed(2)),
-            },
-          ],
-        },
-        probabilities: {
-          homeWin: Math.round((1 / (raw.odds?.home || 1.95)) * 90),
-          draw: Math.round((1 / (raw.odds?.draw || 3.35)) * 90),
-          awayWin: Math.round((1 / (raw.odds?.away || 3.80)) * 90),
-          over15: 82,
-          over25: Math.round((1 / (raw.odds?.over25 || 1.75)) * 90),
-          under25: 42,
-          btts: 60,
-          confidenceScore: 4,
-          predictedScore: {
-            home: raw.homeTeam?.score || 1,
-            away: raw.awayTeam?.score || 0,
           },
-          scoreMatrix: [
-            { score: '1-0', prob: 14.5 },
-            { score: '2-1', prob: 13.2 },
-            { score: '1-1', prob: 12.0 },
-            { score: '2-0', prob: 10.5 },
-          ],
-        },
-        valueBet: {
-          isDetected: true,
-          market: (raw.odds?.home || 1.95) <= 2.2 ? `Victoria ${raw.homeTeam?.name}` : 'Más de 1.5 Goles',
-          selection: raw.homeTeam?.name || 'Local',
-          bookmakerOdd: raw.odds?.home || 1.95,
-          fairOdd: parseFloat(((raw.odds?.home || 1.95) * 0.9).toFixed(2)),
-          expectedValue: 8.5,
-          edgeDescription: 'Diferencial de cuota optimizado en cuota de apertura vs cierre.',
-          recommendedStakePct: 2.5,
-        },
-        detailedStats: raw.detailedStats || {
-          shotsTotal: [12, 9],
-          shotsOnTarget: [5, 3],
-          shotsOffTarget: [5, 4],
-          blockedShots: [2, 2],
-          possession: [54, 46],
-          passesTotal: [480, 410],
-          passesCompleted: [410, 335],
-          passAccuracy: [85, 81],
-          fouls: [11, 13],
-          yellowCards: [2, 2],
-          redCards: [0, 0],
-          offsides: [2, 1],
-          corners: [5, 4],
-          saves: [3, 4],
-          xg: [1.65, 1.15],
-        },
-        tacticalPreview: `Partido oficial de ${raw.league}. En vivo con marcadores y datos oficiales de Opta y ESPN.`,
-        keyAbsences: { home: [], away: [] },
-        h2h: [],
-        leagueSlug: raw.leagueSlug,
-        events: raw.events || [],
-        rosters: raw.rosters,
-      }));
+          awayTeam: {
+            id: raw.awayTeam?.id ? String(raw.awayTeam.id) : undefined,
+            name: raw.awayTeam?.name || 'Visitante',
+            shortName: raw.awayTeam?.shortName || 'VIS',
+            logo: raw.awayTeam?.logo || '',
+            rank: null,
+            record: raw.awayTeam?.record,
+            stats: {
+              xG: raw.detailedStats?.xg?.[1] ?? null,
+              xGA: raw.detailedStats?.xg?.[0] ?? null,
+              possession: raw.detailedStats?.possession?.[1] ?? null,
+              shotsOnTarget: raw.detailedStats?.shotsOnTarget?.[1] ?? null,
+              cornersAvg: raw.detailedStats?.corners?.[1] ?? null,
+              cleanSheets: null,
+              goalsScoredAvg: null,
+              goalsConcededAvg: null,
+              form: Array.isArray(raw.awayTeam?.form) ? raw.awayTeam.form : [],
+              isModelDerived: false,
+            },
+          },
+          odds: {
+            home: hOdd,
+            draw: dOdd,
+            away: aOdd,
+            over25: o25Odd,
+            under25: hasRealOdds ? raw.odds.under25 : 0,
+            bttsYes: hasRealOdds ? raw.odds.bttsYes : 0,
+            bttsNo: hasRealOdds ? raw.odds.bttsNo : 0,
+            cornersOver85: raw.odds?.cornersOver85,
+            provider: raw.odds?.provider || (hasRealOdds ? 'ESPN Odds' : 'Sin cuota publicada'),
+            hasRealOdds,
+            betano: raw.odds?.betano,
+            betplay: raw.odds?.betplay,
+            homeMove: 'stable',
+            awayMove: 'stable',
+            bookmakers: hasRealOdds
+              ? [
+                  {
+                    name: 'Betano',
+                    home: raw.odds?.betano?.home || hOdd,
+                    draw: raw.odds?.betano?.draw || dOdd,
+                    away: raw.odds?.betano?.away || aOdd,
+                    over25: raw.odds?.betano?.over25 || o25Odd,
+                  },
+                  {
+                    name: 'BetPlay',
+                    home: raw.odds?.betplay?.home || hOdd,
+                    draw: raw.odds?.betplay?.draw || dOdd,
+                    away: raw.odds?.betplay?.away || aOdd,
+                    over25: raw.odds?.betplay?.over25 || o25Odd,
+                  },
+                ]
+              : [],
+          },
+          probabilities: {
+            homeWin: hasRealOdds && hOdd > 0 ? Math.round((1 / hOdd) * 90) : null,
+            draw: hasRealOdds && dOdd > 0 ? Math.round((1 / dOdd) * 90) : null,
+            awayWin: hasRealOdds && aOdd > 0 ? Math.round((1 / aOdd) * 90) : null,
+            over25: hasRealOdds && o25Odd > 0 ? Math.round((1 / o25Odd) * 90) : null,
+            isModelEstimate: true,
+          },
+          detailedStats: raw.detailedStats || null,
+          events: raw.events || [],
+          rosters: raw.rosters,
+        };
+      });
     }
     return [];
   } catch (err) {
@@ -199,10 +164,93 @@ export async function fetchMatchSummary(leagueSlug: string, eventId: string) {
   }
 }
 
+export async function fetchMatchDossier(match: Match): Promise<VerifiedMatchDossier | null> {
+  if (!match?.id || !match?.leagueSlug) return null;
+  const key = `${match.leagueSlug}_${match.id}`;
+  const cached = clientDossierCache.get(key);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch('/api/football/match-dossier', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leagueSlug: match.leagueSlug,
+        eventId: match.id,
+        homeTeamId: match.homeTeam?.id,
+        awayTeamId: match.awayTeam?.id,
+        odds: match.odds,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.dossier) {
+      clientDossierCache.set(key, data.dossier);
+      return data.dossier as VerifiedMatchDossier;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error fetching match dossier:', err);
+    return null;
+  }
+}
+
+export async function fetchRadarDossiers(
+  matches: Match[]
+): Promise<Record<string, VerifiedMatchDossier>> {
+  const result: Record<string, VerifiedMatchDossier> = {};
+  const toFetch: Match[] = [];
+
+  for (const m of matches.slice(0, 4)) {
+    if (!m.leagueSlug) continue;
+    const key = `${m.leagueSlug}_${m.id}`;
+    const cached = clientDossierCache.get(key);
+    if (cached) {
+      result[m.id] = cached;
+    } else {
+      toFetch.push(m);
+    }
+  }
+
+  if (toFetch.length === 0) return result;
+
+  try {
+    const res = await fetch('/api/football/radar-dossiers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        matches: toFetch.map((m) => ({
+          id: m.id,
+          leagueSlug: m.leagueSlug,
+          homeTeamId: m.homeTeam?.id,
+          awayTeamId: m.awayTeam?.id,
+          odds: m.odds,
+        })),
+      }),
+    });
+    if (!res.ok) return result;
+    const data = await res.json();
+    if (data?.dossiers) {
+      for (const [id, dossier] of Object.entries(data.dossiers)) {
+        const d = dossier as VerifiedMatchDossier;
+        if (d?.identity?.leagueSlug) {
+          clientDossierCache.set(`${d.identity.leagueSlug}_${id}`, d);
+        }
+        result[id] = d;
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error('Error fetching radar dossiers:', err);
+    return result;
+  }
+}
+
 export async function requestMatchAnalysis(
   match: Match,
   queryType: 'general' | 'goals' | 'monte-carlo' | 'value-hunt' = 'general'
 ): Promise<AnalysisResponse> {
+  const dossier = match.verifiedDossier;
   const response = await fetch('/api/gemini/analyze-match', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -215,22 +263,24 @@ export async function requestMatchAnalysis(
         status: match.status,
         odds: match.odds,
         probabilities: {
-          home: match.probabilities.homeWin,
-          draw: match.probabilities.draw,
-          away: match.probabilities.awayWin,
+          home: dossier?.modelEstimates?.homeWinProb ?? match.probabilities.homeWin,
+          draw: dossier?.modelEstimates?.drawProb ?? match.probabilities.draw,
+          away: dossier?.modelEstimates?.awayWinProb ?? match.probabilities.awayWin,
         },
         stats: {
-          homeXg: match.homeTeam.stats.xG,
-          awayXg: match.awayTeam.stats.xG,
+          homeXg: dossier?.modelEstimates?.expectedGoalsHome ?? match.homeTeam.stats.xG,
+          awayXg: dossier?.modelEstimates?.expectedGoalsAway ?? match.awayTeam.stats.xG,
           homeForm: match.homeTeam.stats.form.join('-'),
           awayForm: match.awayTeam.stats.form.join('-'),
         },
-        recommendedBet: {
-          market: match.valueBet.market,
-          odds: match.valueBet.bookmakerOdd,
-          expectedValue: `+${match.valueBet.expectedValue}%`,
-        },
-        tacticalKey: match.tacticalPreview,
+        recommendedBet: dossier?.modelEstimates?.recommendedPick?.available
+          ? {
+              market: dossier.modelEstimates.recommendedPick.market,
+              odds: dossier.modelEstimates.recommendedPick.bookmakerOdd,
+              expectedValue: `${dossier.modelEstimates.recommendedPick.expectedValue}%`,
+            }
+          : undefined,
+        tacticalKey: dossier?.h2h?.note || match.tacticalPreview,
       },
       queryType,
     }),
@@ -269,11 +319,13 @@ export async function requestSmartParlay(
       homeXg: m.homeTeam.stats.xG,
       awayXg: m.awayTeam.stats.xG,
     },
-    recommendedBet: {
-      market: m.valueBet.market,
-      odds: m.valueBet.bookmakerOdd,
-      expectedValue: `+${m.valueBet.expectedValue}%`,
-    },
+    recommendedBet: m.valueBet
+      ? {
+          market: m.valueBet.market,
+          odds: m.valueBet.bookmakerOdd,
+          expectedValue: `+${m.valueBet.expectedValue}%`,
+        }
+      : undefined,
   }));
 
   const response = await fetch('/api/gemini/smart-parlay', {

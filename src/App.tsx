@@ -30,8 +30,8 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const todayInfo = getTodayTabInfo();
-  const carouselDays = getDynamicDaysCarousel();
+  const todayInfo = useMemo(() => getTodayTabInfo(), []);
+  const carouselDays = useMemo(() => getDynamicDaysCarousel(), []);
 
   const [activeModule, setActiveModule] = useState<string>('partidos');
   const [selectedDate, setSelectedDate] = useState<string>(todayInfo.label);

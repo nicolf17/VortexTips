@@ -101,7 +101,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
         const aFav = favoriteMatchIds ? favoriteMatchIds.includes(a.id) : internalFavs.has(a.id);
         const bFav = favoriteMatchIds ? favoriteMatchIds.includes(b.id) : internalFavs.has(b.id);
         if (aFav !== bFav) return bFav ? 1 : -1;
-        return a.kickoffTime.localeCompare(b.kickoffTime);
+        return (a.kickoffTime || '').localeCompare(b.kickoffTime || '');
       });
 
       groups.push({
@@ -192,38 +192,42 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                   // 12-hour Colombia kickoff time (e.g. "2:00 PM", "7:30 PM")
                   const time12h = formatColombia12h(match.kickoffTime);
 
-                  // Extract authentic odds with Betano & BetPlay average
-                  const betano = match.odds?.betano || {
-                    home: match.odds?.home ?? 1.95,
-                    draw: match.odds?.draw ?? 3.3,
-                    away: match.odds?.away ?? 4.1,
-                    over25: match.odds?.over25 ?? 1.85,
-                    bttsYes: match.odds?.bttsYes ?? 1.88,
-                    cornersOver85: match.odds?.cornersOver85 ?? 1.72,
-                  };
+                  const hasRealOdds = Boolean(match.odds?.hasRealOdds && match.odds.home > 0);
+                  const betano = match.odds?.betano;
+                  const betplay = match.odds?.betplay;
 
-                  const betplay = match.odds?.betplay || {
-                    home: match.odds?.home ? match.odds.home + 0.02 : 1.98,
-                    draw: match.odds?.draw ? match.odds.draw - 0.02 : 3.28,
-                    away: match.odds?.away ? match.odds.away + 0.04 : 4.15,
-                    over25: match.odds?.over25 ? match.odds.over25 - 0.02 : 1.83,
-                    bttsYes: match.odds?.bttsYes ? match.odds.bttsYes - 0.01 : 1.86,
-                    cornersOver85: match.odds?.cornersOver85 ? match.odds.cornersOver85 + 0.02 : 1.75,
-                  };
+                  const homeAvg =
+                    hasRealOdds && betano && betplay
+                      ? ((betano.home + betplay.home) / 2).toFixed(2)
+                      : hasRealOdds
+                      ? match.odds.home.toFixed(2)
+                      : 'N/D';
+                  const drawAvg =
+                    hasRealOdds && betano && betplay
+                      ? ((betano.draw + betplay.draw) / 2).toFixed(2)
+                      : hasRealOdds && match.odds.draw > 0
+                      ? match.odds.draw.toFixed(2)
+                      : 'N/D';
+                  const awayAvg =
+                    hasRealOdds && betano && betplay
+                      ? ((betano.away + betplay.away) / 2).toFixed(2)
+                      : hasRealOdds
+                      ? match.odds.away.toFixed(2)
+                      : 'N/D';
 
-                  // ML (1X2) Average Odds
-                  const homeAvg = ((betano.home + betplay.home) / 2).toFixed(2);
-                  const drawAvg = ((betano.draw + betplay.draw) / 2).toFixed(2);
-                  const awayAvg = ((betano.away + betplay.away) / 2).toFixed(2);
+                  const aaAvg =
+                    hasRealOdds && betano && betplay && betano.bttsYes > 0
+                      ? ((betano.bttsYes + betplay.bttsYes) / 2).toFixed(2)
+                      : hasRealOdds && match.odds.bttsYes > 0
+                      ? match.odds.bttsYes.toFixed(2)
+                      : 'N/D';
 
-                  // AA (Ambos Anotan / BTTS) Average Odd
-                  const aaAvg = ((betano.bttsYes + betplay.bttsYes) / 2).toFixed(2);
-
-                  // Corners Line: default calibrated around ~1.65 - 1.75
-                  const cornersAvg = (
-                    ((betano.cornersOver85 || 1.72) + (betplay.cornersOver85 || 1.75)) /
-                    2
-                  ).toFixed(2);
+                  const cornersAvg =
+                    hasRealOdds && betano?.cornersOver85 && betplay?.cornersOver85
+                      ? ((betano.cornersOver85 + betplay.cornersOver85) / 2).toFixed(2)
+                      : hasRealOdds && match.odds.cornersOver85
+                      ? match.odds.cornersOver85.toFixed(2)
+                      : 'N/D';
 
                   const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
                   const awayTeamName = getLocalizedTeamName(match.awayTeam.name);

@@ -29,6 +29,7 @@ if (apiKey) {
 }
 
 import { fetchRealMatches, fetchExactMatchStats } from './server/espnService.ts';
+import { buildVerifiedMatchDossier } from './server/dossierService.ts';
 
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -75,6 +76,93 @@ app.get('/api/football/match-summary', async (req: Request, res: Response) => {
   }
 });
 
+// Endpoint: Full verified match dossier (IDs, H2H, Last 5 Overall/Home/Away, 4-state Referee, Absences, Internal Model)
+app.get('/api/football/match-dossier', async (req: Request, res: Response) => {
+  try {
+    const leagueSlug = String(req.query.leagueSlug || '');
+    const eventId = String(req.query.eventId || '');
+    const homeTeamId = req.query.homeTeamId ? String(req.query.homeTeamId) : undefined;
+    const awayTeamId = req.query.awayTeamId ? String(req.query.awayTeamId) : undefined;
+
+    if (!leagueSlug || !eventId) {
+      return res.status(400).json({ error: 'Missing leagueSlug or eventId parameter' });
+    }
+
+    const dossier = await buildVerifiedMatchDossier({
+      leagueSlug,
+      eventId,
+      homeTeamId,
+      awayTeamId,
+    });
+
+    if (!dossier) {
+      return res.status(404).json({ error: 'Match dossier could not be verified' });
+    }
+
+    res.json({ success: true, dossier });
+  } catch (err: any) {
+    console.error('Error building match dossier:', err);
+    res.status(500).json({ error: 'Failed to build verified match dossier' });
+  }
+});
+
+app.post('/api/football/match-dossier', async (req: Request, res: Response) => {
+  try {
+    const { leagueSlug, eventId, homeTeamId, awayTeamId, odds } = req.body || {};
+    if (!leagueSlug || !eventId) {
+      return res.status(400).json({ error: 'Missing leagueSlug or eventId' });
+    }
+    const dossier = await buildVerifiedMatchDossier({
+      leagueSlug: String(leagueSlug),
+      eventId: String(eventId),
+      homeTeamId: homeTeamId ? String(homeTeamId) : undefined,
+      awayTeamId: awayTeamId ? String(awayTeamId) : undefined,
+      odds,
+    });
+    if (!dossier) {
+      return res.status(404).json({ error: 'Match dossier could not be verified' });
+    }
+    res.json({ success: true, dossier });
+  } catch (err: any) {
+    console.error('Error building match dossier (POST):', err);
+    res.status(500).json({ error: 'Failed to build verified match dossier' });
+  }
+});
+
+// Endpoint: Batch verified dossiers for up to 4 Radar matches
+app.post('/api/football/radar-dossiers', async (req: Request, res: Response) => {
+  try {
+    const items = Array.isArray(req.body?.matches) ? req.body.matches.slice(0, 4) : [];
+    const dossiers: Record<string, any> = {};
+
+    await Promise.allSettled(
+      items.map(async (item: any) => {
+        if (!item?.id || !item?.leagueSlug) return;
+        const d = await buildVerifiedMatchDossier({
+          leagueSlug: String(item.leagueSlug),
+          eventId: String(item.id),
+          homeTeamId: item.homeTeamId ? String(item.homeTeamId) : undefined,
+          awayTeamId: item.awayTeamId ? String(item.awayTeamId) : undefined,
+          odds: item.odds,
+        });
+        if (d) {
+          dossiers[String(item.id)] = d;
+        }
+      })
+    );
+
+    res.json({
+      success: true,
+      count: Object.keys(dossiers).length,
+      timestamp: new Date().toISOString(),
+      dossiers,
+    });
+  } catch (err: any) {
+    console.error('Error building radar dossiers:', err);
+    res.status(500).json({ error: 'Failed to build radar dossiers' });
+  }
+});
+
 // Endpoint: Deep Match Tactical & Betting Analysis
 app.post('/api/gemini/analyze-match', async (req: Request, res: Response) => {
   try {
@@ -93,38 +181,28 @@ app.post('/api/gemini/analyze-match', async (req: Request, res: Response) => {
     }
 
     const prompt = `
-Eres un analista de datos deportivos de élite y experto en cuantitativo de fútbol (Sports Betting Quant & Tactical Analyst).
-Analiza el siguiente partido con rigor estadístico profesional:
+Eres un analista de datos deportivos riguroso. Regla absoluta: NO inventes ni asumas ningún dato, estadística, lesión, árbitro o historial que no aparezca explícitamente abajo. Si algún dato dice "No disponible", indícalo como no verificable.
 
 PARTIDO: ${match.homeTeam} vs ${match.awayTeam}
 COMPETICIÓN: ${match.league}
-ESTADO: ${match.status || 'Próximo'}
-CUOTAS ACTUALES:
-- 1 (Local): ${match.odds?.home ?? '2.10'}
-- X (Empate): ${match.odds?.draw ?? '3.30'}
-- 2 (Visitante): ${match.odds?.away ?? '3.50'}
-- Más de 2.5 Goles: ${match.odds?.over25 ?? '1.95'}
-- Ambos Marcan (BTTS Sí): ${match.odds?.btts ?? '1.80'}
+ESTADO: ${match.status || 'No especificado'}
+CUOTAS CONSULTADAS:
+- 1 (Local): ${match.odds?.home ?? 'No disponible'}
+- X (Empate): ${match.odds?.draw ?? 'No disponible'}
+- 2 (Visitante): ${match.odds?.away ?? 'No disponible'}
+- Más de 2.5 Goles: ${match.odds?.over25 ?? 'No disponible'}
+- Ambos Marcan (BTTS Sí): ${match.odds?.btts ?? 'No disponible'}
 
-MÉTRICAS DEL MODELO ESTADÍSTICO INTERNO:
-- xG Promedio Local (últimos 5): ${match.stats?.homeXg || '1.85'}
-- xG Promedio Visitante (últimos 5): ${match.stats?.awayXg || '1.15'}
-- Probabilidad Poisson estimada: Local ${match.probabilities?.home || 48}%, Empate ${match.probabilities?.draw || 27}%, Visitante ${match.probabilities?.away || 25}%
-- xG Previsto: ${match.stats?.homeXg || '1.8'} - ${match.stats?.awayXg || '1.1'}
-- Forma Reciente Local: ${match.stats?.homeForm || 'G-G-E-G-P'}
-- Forma Reciente Visitante: ${match.stats?.awayForm || 'E-P-G-P-G'}
-- Clave Táctica: ${match.tacticalKey || 'Presión alta vs bloque bajo'}
+DATOS VERIFICADOS Y CÁLCULO INTERNO DEL MODELO:
+- Proyección goles modelo (L - V): ${match.stats?.homeXg ?? 'No disponible'} - ${match.stats?.awayXg ?? 'No disponible'}
+- Probabilidades internas modelo: Local ${match.probabilities?.home ?? 'N/D'}%, Empate ${match.probabilities?.draw ?? 'N/D'}%, Visitante ${match.probabilities?.away ?? 'N/D'}%
+- Forma reciente verificada Local: ${match.stats?.homeForm || 'No disponible'}
+- Forma reciente verificada Visitante: ${match.stats?.awayForm || 'No disponible'}
+- Nota contextual: ${match.tacticalKey || 'No disponible'}
 
 ENFOQUE SOLICITADO: ${queryType}
 
-Genera un reporte conciso, directo y accionable en español con:
-1. Resumen Táctico Cuantitativo (2-3 oraciones sobre ritmo de juego, choques de estilo y xG).
-2. Detección de Valor Real (Value Bet) comparando las cuotas de las casas vs la probabilidad de nuestro modelo.
-3. Pronóstico Recomendado Principal (Mercado exacto, Cuota recomendada y Nivel de Confianza de 1 a 5 estrellas).
-4. Alternativa de Apuesta Segura (Stake bajo o cuota conservadora) y Alternativa de Alto Valor (High EV).
-5. Factores de Riesgo Claves a Monitorear (lesiones, rotaciones, clima o tiempo de descanso).
-
-Responde con un formato limpio en markdown, con viñetas claras y negritas en las cuotas y pronósticos clave. Mantén un tono analítico, profesional y sin rodeos.
+Responde en español con formato limpio en markdown separando claramente datos verificados de estimaciones del modelo y señalando cualquier dato faltante como no disponible.
 `;
 
     const response = await ai.models.generateContent({
@@ -209,35 +287,34 @@ Sé muy estructurado, directo y utiliza viñetas.
   }
 });
 
-// Heuristic fallback generator for instant offline resilience
-function generateHeuristicAnalysis(match: any, queryType: string): string {
+// Honest fallback without inventing numbers when AI key is absent
+function generateHeuristicAnalysis(match: any, _queryType: string): string {
   if (!match) return 'No se recibieron datos suficientes del partido.';
-  const homeProb = match.probabilities?.home || 45;
-  const awayProb = match.probabilities?.away || 30;
-  const drawProb = match.probabilities?.draw || 25;
-  const topPick = homeProb >= awayProb ? `${match.homeTeam} victoria o empate (1X)` : `${match.awayTeam} victoria o empate (X2)`;
-  const xgTotal = (parseFloat(match.stats?.homeXg || '1.6') + parseFloat(match.stats?.awayXg || '1.1')).toFixed(1);
+  const hasProbs =
+    typeof match.probabilities?.home === 'number' &&
+    typeof match.probabilities?.draw === 'number' &&
+    typeof match.probabilities?.away === 'number';
+  const hasRecommended = Boolean(match.recommendedBet?.market && match.recommendedBet?.odds);
 
-  return `### 📊 Diagnóstico Algorítmico GolMetrics
+  return `### 📊 Resumen Verificado del Encuentro (Cálculo Interno VORTEXTIPS)
 
-**1. Análisis Cuantitativo de Rendimiento:**
-- **xG Proyectado Conjunto:** ${xgTotal} goles esperados.
-- **Régimen de Probabilidad Monte Carlo:** Victoria ${match.homeTeam} (${homeProb}%), Empate (${drawProb}%), Victoria ${match.awayTeam} (${awayProb}%).
-- **Control de Posesión y Peligro:** ${match.homeTeam} genera una tasa de conversión de tiro superior al promedio de ${match.league}.
+**1. Muestra y Probabilidades del Modelo:**
+- ${
+    hasProbs
+      ? `**Distribución Poisson (Cálculo Interno):** Local ${match.probabilities.home}% | Empate ${match.probabilities.draw}% | Visitante ${match.probabilities.away}%`
+      : 'Probabilidades del modelo no disponibles por muestra estadística verificada insuficiente.'
+  }
+- **Forma Reciente Verificada:** Local (${match.stats?.homeForm || 'No disponible'}) | Visitante (${match.stats?.awayForm || 'No disponible'})
 
-**2. Detección de Valor Esperado (+EV):**
-- La cuota de **${match.recommendedBet?.odds || match.odds?.home || '1.95'}** en el mercado de *${match.recommendedBet?.market || 'Victoria Local'}* presenta un margen a favor del apostador de **${match.recommendedBet?.expectedValue || '+9.2%'}** frente al cierre de las casas principales.
+**2. Evaluación de Valor Esperado:**
+- ${
+    hasRecommended
+      ? `Selección evaluada: **${match.recommendedBet.market}** @ **${match.recommendedBet.odds}** (${match.recommendedBet.expectedValue || 'EV no calculable'}).`
+      : 'No fue posible verificar una oportunidad de valor esperado (+EV) con los datos y cuotas disponibles.'
+  }
 
-**3. Pronóstico Recomendado:**
-- 🎯 **Selección:** **${match.recommendedBet?.market || 'Gana ' + match.homeTeam}**
-- 📈 **Cuota:** **${match.recommendedBet?.odds || '1.90'}**
-- ⭐ **Confianza del Modelo:** 4/5 estrellas (Índice de fiabilidad 82%)
-
-**4. Alternativa Conservadora:**
-- 🛡️ **Doble Oportunidad:** ${topPick} @ 1.35 o Más de 1.5 Goles en el partido.
-
-**5. Alerta Táctica:**
-- Vigilar transiciones rápidas en el segundo tiempo. La fatiga acumulada en los minutos 65-80 incrementa la probabilidad de goles tardíos.`;
+**3. Nota de Veracidad:**
+- Este resumen se limita estrictamente a los datos consultados del partido. La información arbitral, de bajas o xG que no figure en las fuentes oficiales consultadas permanece marcada como **No disponible**.`;
 }
 
 function generateHeuristicParlay(matches: any[], riskLevel: string, targetOdds: number): string {

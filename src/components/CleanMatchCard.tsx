@@ -35,51 +35,41 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
   const homeTeamShort = getLocalizedShortTeamName(match.homeTeam.name, match.homeTeam.shortName);
   const awayTeamShort = getLocalizedShortTeamName(match.awayTeam.name, match.awayTeam.shortName);
 
-  const betano = match.odds?.betano || {
-    home: match.odds?.home ?? 2.1,
-    draw: match.odds?.draw ?? 3.2,
-    away: match.odds?.away ?? 3.4,
-    over25: match.odds?.over25 ?? 1.85,
-    under25: match.odds?.under25 ?? 1.95,
-    bttsYes: match.odds?.bttsYes ?? 1.8,
-    bttsNo: match.odds?.bttsNo ?? 1.95,
-  };
+  const hasRealOdds = Boolean(match.odds?.hasRealOdds && match.odds.home > 0);
+  const betano = match.odds?.betano;
+  const betplay = match.odds?.betplay;
 
-  const betplay = match.odds?.betplay || {
-    home: match.odds?.home ? match.odds.home + 0.02 : 2.15,
-    draw: match.odds?.draw ? match.odds.draw - 0.02 : 3.22,
-    away: match.odds?.away ? match.odds.away + 0.03 : 3.42,
-    over25: match.odds?.over25 ? match.odds.over25 - 0.02 : 1.83,
-    under25: match.odds?.under25 ? match.odds.under25 + 0.03 : 1.98,
-    bttsYes: match.odds?.bttsYes ? match.odds.bttsYes - 0.01 : 1.79,
-    bttsNo: match.odds?.bttsNo ? match.odds.bttsNo + 0.02 : 1.97,
-  };
+  const referee = match.refereeInfo;
+  const kickoffTime = formatColombia12h(match.kickoffTime || '');
 
-  const referee = match.refereeInfo || {
-    name: 'Colegiado Designado',
-    country: 'FIFA',
-    matchesCount: 24,
-    yellowAvg: 4.8,
-    redTotal: 5,
-    foulsAvg: 25.2,
-    penaltiesAvg: 0.35,
-    trendDescription: 'Árbitro oficial',
-  };
+  const homeAvg =
+    hasRealOdds && betano && betplay
+      ? ((betano.home + betplay.home) / 2).toFixed(2)
+      : hasRealOdds
+      ? match.odds.home.toFixed(2)
+      : 'N/D';
+  const drawAvg =
+    hasRealOdds && betano && betplay
+      ? ((betano.draw + betplay.draw) / 2).toFixed(2)
+      : hasRealOdds && match.odds.draw > 0
+      ? match.odds.draw.toFixed(2)
+      : 'N/D';
+  const awayAvg =
+    hasRealOdds && betano && betplay
+      ? ((betano.away + betplay.away) / 2).toFixed(2)
+      : hasRealOdds
+      ? match.odds.away.toFixed(2)
+      : 'N/D';
 
-  const kickoffTime = formatColombia12h(match.kickoffTime || '3:00 PM');
+  const homeProb =
+    homeAvg !== 'N/D' ? Math.min(95, Math.max(5, Math.round((1 / parseFloat(homeAvg)) * 100))) : null;
+  const drawProb =
+    drawAvg !== 'N/D' ? Math.min(95, Math.max(5, Math.round((1 / parseFloat(drawAvg)) * 100))) : null;
+  const awayProb =
+    awayAvg !== 'N/D' ? Math.min(95, Math.max(5, Math.round((1 / parseFloat(awayAvg)) * 100))) : null;
 
-  // Calculate real average odds
-  const homeAvg = ((betano.home + betplay.home) / 2).toFixed(2);
-  const drawAvg = ((betano.draw + betplay.draw) / 2).toFixed(2);
-  const awayAvg = ((betano.away + betplay.away) / 2).toFixed(2);
-
-  // Implied probability based on average odds
-  const homeProb = Math.min(95, Math.max(10, Math.round((1 / parseFloat(homeAvg)) * 100)));
-  const drawProb = Math.min(95, Math.max(10, Math.round((1 / parseFloat(drawAvg)) * 100)));
-  const awayProb = Math.min(95, Math.max(10, Math.round((1 / parseFloat(awayAvg)) * 100)));
-
-  const homeForm = match.homeTeam?.stats?.form || ['W', 'D', 'W', 'W'];
-  const awayForm = match.awayTeam?.stats?.form || ['D', 'W', 'L', 'D'];
+  const homeForm = match.homeTeam?.stats?.form || [];
+  const awayForm = match.awayTeam?.stats?.form || [];
 
   return (
     <div
@@ -235,13 +225,15 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {homeAvg}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
-              <span>Bno: <strong className="text-slate-200">{betano.home.toFixed(2)}</strong></span>
-              <span>Bplay: <strong className="text-slate-200">{betplay.home.toFixed(2)}</strong></span>
-            </div>
+            {betano && betplay && (
+              <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
+                <span>Bno: <strong className="text-slate-200">{betano.home.toFixed(2)}</strong></span>
+                <span>Bplay: <strong className="text-slate-200">{betplay.home.toFixed(2)}</strong></span>
+              </div>
+            )}
             <div className="mt-1 flex items-center justify-center text-[9px] font-medium text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 rounded py-0.5">
               <Percent className="w-2.5 h-2.5 mr-0.5" />
-              {homeProb}% prob.
+              {homeProb !== null ? `${homeProb}% prob.` : 'N/D'}
             </div>
           </div>
 
@@ -253,13 +245,15 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             <div className="text-sm font-extrabold text-slate-200 font-mono mt-0.5">
               {drawAvg}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
-              <span>Bno: <strong className="text-slate-200">{betano.draw.toFixed(2)}</strong></span>
-              <span>Bplay: <strong className="text-slate-200">{betplay.draw.toFixed(2)}</strong></span>
-            </div>
+            {betano && betplay && (
+              <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
+                <span>Bno: <strong className="text-slate-200">{betano.draw.toFixed(2)}</strong></span>
+                <span>Bplay: <strong className="text-slate-200">{betplay.draw.toFixed(2)}</strong></span>
+              </div>
+            )}
             <div className="mt-1 flex items-center justify-center text-[9px] font-medium text-slate-400 bg-slate-800/60 rounded py-0.5">
               <Percent className="w-2.5 h-2.5 mr-0.5" />
-              {drawProb}% prob.
+              {drawProb !== null ? `${drawProb}% prob.` : 'N/D'}
             </div>
           </div>
 
@@ -271,13 +265,15 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             <div className="text-sm font-extrabold text-sky-300 font-mono mt-0.5">
               {awayAvg}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
-              <span>Bno: <strong className="text-slate-200">{betano.away.toFixed(2)}</strong></span>
-              <span>Bplay: <strong className="text-slate-200">{betplay.away.toFixed(2)}</strong></span>
-            </div>
+            {betano && betplay && (
+              <div className="flex items-center justify-center gap-2 mt-1 text-[9px] text-slate-400 border-t border-slate-750 pt-1 font-mono">
+                <span>Bno: <strong className="text-slate-200">{betano.away.toFixed(2)}</strong></span>
+                <span>Bplay: <strong className="text-slate-200">{betplay.away.toFixed(2)}</strong></span>
+              </div>
+            )}
             <div className="mt-1 flex items-center justify-center text-[9px] font-medium text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 rounded py-0.5">
               <Percent className="w-2.5 h-2.5 mr-0.5" />
-              {awayProb}% prob.
+              {awayProb !== null ? `${awayProb}% prob.` : 'N/D'}
             </div>
           </div>
         </div>
@@ -288,11 +284,13 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
         <div className="flex items-center gap-1.5 text-slate-400">
           <ShieldAlert className="w-3.5 h-3.5 text-sky-400" />
           <span className="text-[11px] font-medium">
-            Árbitro: <strong className="text-slate-200">{referee.name}</strong>
+            Árbitro: <strong className="text-slate-200">{referee?.name || 'Por verificar'}</strong>
           </span>
-          <span className="text-[10px] text-slate-400 hidden sm:inline">
-            ({referee.yellowAvg} amarillas/p)
-          </span>
+          {referee?.yellowAvg !== null && referee?.yellowAvg !== undefined && (
+            <span className="text-[10px] text-slate-400 hidden sm:inline">
+              ({referee.yellowAvg} amarillas/p)
+            </span>
+          )}
         </div>
 
         <span className="flex items-center gap-1 text-[11px] font-semibold text-sky-300 group-hover:translate-x-0.5 transition-transform">
