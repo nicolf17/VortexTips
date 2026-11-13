@@ -15,7 +15,12 @@ import { Match, VerifiedMatchDossier } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
 import { getLocalizedTeamName } from '../utils/localization';
-import { fetchMatchDossier } from '../services/api';
+import {
+  fetchMatchDossier,
+  UNAVAILABLE_DATA_MESSAGE,
+  validateAndSanitizeDossier,
+  validateMatchIdentifiers,
+} from '../services/api';
 
 interface FlashscoreDetailModalProps {
   match: Match | null;
@@ -30,7 +35,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [dossier, setDossier] = useState<VerifiedMatchDossier | null>(
+  const [rawDossier, setRawDossier] = useState<VerifiedMatchDossier | null>(
     () => match?.verifiedDossier ?? null
   );
   const [loadingDossier, setLoadingDossier] = useState<boolean>(false);
@@ -47,23 +52,33 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
     setActiveTab(match.status === 'LIVE' || match.status === 'FINISHED' ? 'events' : 'markets');
   }, [match?.id]);
 
+  const idValidation = React.useMemo(() => validateMatchIdentifiers(match), [match]);
+  const dossierCheck = React.useMemo(
+    () => validateAndSanitizeDossier(match, rawDossier),
+    [match, rawDossier]
+  );
+  const dossier = dossierCheck.valid ? dossierCheck.dossier : null;
+
   useEffect(() => {
     if (!isOpen || !match) return;
-    if (match.verifiedDossier) {
-      setDossier(match.verifiedDossier);
+    if (!idValidation.isValid || !match.leagueSlug) {
+      setRawDossier(null);
       setLoadingDossier(false);
       return;
     }
-    if (!match.leagueSlug) {
-      setDossier(null);
-      setLoadingDossier(false);
-      return;
+    if (match.verifiedDossier) {
+      const check = validateAndSanitizeDossier(match, match.verifiedDossier);
+      if (check.valid && check.dossier) {
+        setRawDossier(check.dossier);
+        setLoadingDossier(false);
+        return;
+      }
     }
     let cancelled = false;
     setLoadingDossier(true);
     fetchMatchDossier(match)
       .then((res) => {
-        if (!cancelled) setDossier(res);
+        if (!cancelled) setRawDossier(res);
       })
       .finally(() => {
         if (!cancelled) setLoadingDossier(false);
@@ -71,7 +86,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, match?.id, match?.leagueSlug, match?.verifiedDossier]);
+  }, [isOpen, match?.id, match?.leagueSlug, match?.verifiedDossier, idValidation.isValid]);
 
   if (!isOpen || !match) return null;
 
@@ -89,7 +104,7 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
   const betano = match.odds?.betano;
   const betplay = match.odds?.betplay;
 
-  const referee = dossier?.referee || match.refereeInfo;
+  const referee = dossier?.referee || (idValidation.isValid ? match.refereeInfo : undefined);
   const kickoffTime = dossier?.identity?.kickoffCot || formatColombia12h(match.kickoffTime || '');
 
   const homeAvg =
@@ -118,36 +133,52 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
   const awayProb =
     awayAvg !== 'N/D' ? Math.min(95, Math.max(5, Math.round((1 / parseFloat(awayAvg)) * 100))) : null;
 
-  // Derive real form from verified dossier last5Overall first, else scoreboard form
-  const homeForm: ('W' | 'D' | 'L')[] = dossier?.home?.last5Overall?.length
+  const isCoherent = idValidation.isValid && (!rawDossier || dossierCheck.valid);
+
+  // Derive real form strictly when identifiers & dates are validated
+  const homeForm: ('W' | 'D' | 'L')[] = !isCoherent
+    ? []
+    : dossier?.home?.last5Overall?.length
     ? dossier.home.last5Overall
         .map((m) => m.outcomeForTeam)
         .filter((x): x is 'W' | 'D' | 'L' => Boolean(x))
     : match.homeTeam?.stats?.form || [];
 
-  const awayForm: ('W' | 'D' | 'L')[] = dossier?.away?.last5Overall?.length
+  const awayForm: ('W' | 'D' | 'L')[] = !isCoherent
+    ? []
+    : dossier?.away?.last5Overall?.length
     ? dossier.away.last5Overall
         .map((m) => m.outcomeForTeam)
         .filter((x): x is 'W' | 'D' | 'L' => Boolean(x))
     : match.awayTeam?.stats?.form || [];
 
-  const rosters = dossier?.officialMatchStats?.rosters || match.rosters;
-  const lineupConfirmed = Boolean(dossier?.officialMatchStats?.lineupConfirmed || rosters?.confirmed);
+  const rosters = !isCoherent
+    ? undefined
+    : dossier?.officialMatchStats?.rosters || match.rosters;
+  const lineupConfirmed = Boolean(
+    isCoherent && (dossier?.officialMatchStats?.lineupConfirmed || rosters?.confirmed)
+  );
   const homeStarters = rosters?.home || [];
   const awayStarters = rosters?.away || [];
   const homeBench = rosters?.benchHome || [];
   const awayBench = rosters?.benchAway || [];
 
-  const matchEvents =
-    (dossier?.officialMatchStats?.events?.length
-      ? dossier.officialMatchStats.events
-      : match.events) || [];
+  const matchEvents = !isCoherent
+    ? []
+    : (dossier?.officialMatchStats?.events?.length
+        ? dossier.officialMatchStats.events
+        : match.events) || [];
 
-  const stats = dossier?.officialMatchStats?.stats ?? match.detailedStats ?? null;
+  const stats = !isCoherent
+    ? null
+    : dossier?.officialMatchStats?.stats ?? match.detailedStats ?? null;
   const possHome = stats?.possession?.[0];
   const possAway = stats?.possession?.[1];
 
-  const h2hMatches = dossier?.h2h?.matches || [];
+  const h2hMatches =
+    idValidation.isValid && dossier?.h2h?.status !== 'NO DISPONIBLE'
+      ? dossier?.h2h?.matches || []
+      : [];
 
   return (
     <div
@@ -222,7 +253,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <span className="text-[10px] font-mono text-slate-500">N/D</span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {idValidation.isValid ? 'N/D' : UNAVAILABLE_DATA_MESSAGE}
+                    </span>
                   )}
                 </div>
               </div>
@@ -284,7 +317,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <span className="text-[10px] font-mono text-slate-500">N/D</span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {idValidation.isValid ? 'N/D' : UNAVAILABLE_DATA_MESSAGE}
+                    </span>
                   )}
                   <span>:Forma</span>
                 </div>
@@ -387,6 +422,14 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
             <div className="flex items-center gap-2 text-xs text-sky-300 bg-[#0f1725] border border-sky-500/30 rounded-lg px-3 py-2">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               <span>Verificando árbitro, bajas, H2H y últimos partidos en fuentes oficiales...</span>
+            </div>
+          )}
+
+          {!loadingDossier && !isCoherent && (
+            <div className="flex items-center gap-2 text-xs text-amber-300 bg-[#0f1725] border border-amber-500/30 rounded-lg px-3 py-2">
+              <span>
+                {UNAVAILABLE_DATA_MESSAGE}: no se pudo comprobar la coherencia de eventId, IDs de equipo o fecha para estadísticas e historial H2H.
+              </span>
             </div>
           )}
 
@@ -507,7 +550,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
 
                 {!stats ? (
                   <div className="py-6 text-center text-slate-400 text-xs">
-                    Estadísticas detalladas de boxscore no disponibles en las fuentes consultadas para este partido.
+                    {!idValidation.isValid
+                      ? `${UNAVAILABLE_DATA_MESSAGE}: no se pudo comprobar la coherencia de eventId, IDs de equipo o fecha.`
+                      : `${UNAVAILABLE_DATA_MESSAGE}: estadísticas detalladas de boxscore no disponibles en las fuentes consultadas para este partido.`}
                   </div>
                 ) : (
                   <div className="space-y-4 text-xs">
@@ -1096,8 +1141,9 @@ export const FlashscoreDetailModal: React.FC<FlashscoreDetailModalProps> = ({
                     ))
                   ) : (
                     <div className="text-slate-400 text-xs py-2">
-                      {dossier?.h2h?.note ||
-                        'Historial de enfrentamientos directos no disponible o insuficiente para este encuentro.'}
+                      {!idValidation.isValid
+                        ? `${UNAVAILABLE_DATA_MESSAGE}: identificadores de partido o equipos incompletos.`
+                        : dossier?.h2h?.note || UNAVAILABLE_DATA_MESSAGE}
                     </div>
                   )}
                 </div>

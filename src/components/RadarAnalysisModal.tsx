@@ -22,7 +22,12 @@ import {
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
 import { getLocalizedTeamName, getLocalizedMarketText } from '../utils/localization';
-import { fetchMatchDossier } from '../services/api';
+import {
+  fetchMatchDossier,
+  UNAVAILABLE_DATA_MESSAGE,
+  validateAndSanitizeDossier,
+  validateMatchIdentifiers,
+} from '../services/api';
 
 interface RadarAnalysisModalProps {
   match: Match | null;
@@ -109,28 +114,38 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
   onClose,
   onToggleSelection,
 }) => {
-  const [dossier, setDossier] = useState<VerifiedMatchDossier | null>(
+  const [rawDossier, setRawDossier] = useState<VerifiedMatchDossier | null>(
     () => match?.verifiedDossier ?? null
   );
   const [loading, setLoading] = useState<boolean>(false);
 
+  const idValidation = React.useMemo(() => validateMatchIdentifiers(match), [match]);
+  const dossierValidation = React.useMemo(
+    () => validateAndSanitizeDossier(match, rawDossier),
+    [match, rawDossier]
+  );
+  const dossier = dossierValidation.valid ? dossierValidation.dossier : null;
+
   useEffect(() => {
     if (!isOpen || !match) return;
-    if (match.verifiedDossier) {
-      setDossier(match.verifiedDossier);
+    if (!idValidation.isValid || !match.leagueSlug) {
+      setRawDossier(null);
       setLoading(false);
       return;
     }
-    if (!match.leagueSlug) {
-      setDossier(null);
-      setLoading(false);
-      return;
+    if (match.verifiedDossier) {
+      const check = validateAndSanitizeDossier(match, match.verifiedDossier);
+      if (check.valid && check.dossier) {
+        setRawDossier(check.dossier);
+        setLoading(false);
+        return;
+      }
     }
     let cancelled = false;
     setLoading(true);
     fetchMatchDossier(match)
       .then((res) => {
-        if (!cancelled) setDossier(res);
+        if (!cancelled) setRawDossier(res);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -138,7 +153,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, match?.id, match?.leagueSlug, match?.verifiedDossier]);
+  }, [isOpen, match?.id, match?.leagueSlug, match?.verifiedDossier, idValidation.isValid]);
 
   if (!isOpen || !match) return null;
 
@@ -153,7 +168,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
 
   const hasRealOdds = Boolean(match.odds?.hasRealOdds && match.odds.home > 0);
   const pick = dossier?.modelEstimates?.recommendedPick;
-  const referee = dossier?.referee || match.refereeInfo;
+  const referee = dossier?.referee || (idValidation.isValid ? match.refereeInfo : undefined);
 
   return (
     <div
@@ -178,7 +193,11 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
                 <span className="text-xs text-slate-400 font-mono">
                   🇨🇴 {kickoffTime}
                 </span>
-                {dossier?.identity?.verified && <StatusBadge status="VERIFICADO" />}
+                {dossier?.identity?.verified ? (
+                  <StatusBadge status="VERIFICADO" />
+                ) : (
+                  <StatusBadge status="NO DISPONIBLE" />
+                )}
               </div>
               <h2 className="text-base sm:text-lg font-bold text-white mt-0.5 truncate">
                 {homeTeamName} vs {awayTeamName}
@@ -204,7 +223,7 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
               <span>
                 <strong>ID Evento:</strong>{' '}
                 <span className="font-mono text-sky-300">
-                  {dossier?.identity?.eventId || match.id}
+                  {dossier?.identity?.eventId || match.id || 'N/D'}
                 </span>
               </span>
               <span>•</span>
@@ -233,14 +252,16 @@ export const RadarAnalysisModal: React.FC<RadarAnalysisModalProps> = ({
               <RefreshCw className="w-6 h-6 animate-spin text-sky-400" />
               <span>Consultando y validando fuentes oficiales (ESPN & FotMob)...</span>
             </div>
-          ) : !dossier ? (
+          ) : !idValidation.isValid || !dossier ? (
             <div className="p-6 rounded-xl bg-[#0f1726] border border-amber-500/30 text-xs text-slate-300 space-y-2">
               <div className="flex items-center gap-2 font-bold text-amber-300">
                 <AlertTriangle className="w-4 h-4" />
-                <span>Dossier oficial completo no disponible para este encuentro</span>
+                <span>{UNAVAILABLE_DATA_MESSAGE}</span>
               </div>
               <p>
-                No fue posible verificar la totalidad de las fuentes externas para este identificador. No se muestran estadísticas ni historiales sin respaldo comprobable.
+                {!idValidation.isValid
+                  ? `${UNAVAILABLE_DATA_MESSAGE}: no se pudo comprobar la presencia o coherencia de eventId, IDs de equipo o fecha (${idValidation.reasons.join(', ')}).`
+                  : `${UNAVAILABLE_DATA_MESSAGE}: los identificadores o fechas de las fuentes externas no coinciden con este encuentro o el historial no pudo verificarse.`}
               </p>
             </div>
           ) : (

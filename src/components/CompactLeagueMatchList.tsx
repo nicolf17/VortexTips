@@ -4,6 +4,7 @@ import { Match } from '../types/football';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
 import { getLocalizedTeamName } from '../utils/localization';
+import { UNAVAILABLE_DATA_MESSAGE, validateMatchIdentifiers } from '../services/api';
 import { CountryFlag } from './CountryFlag';
 
 interface CompactLeagueMatchListProps {
@@ -185,6 +186,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
             {!isCollapsed && (
               <div className="divide-y divide-slate-800/80">
                 {group.matches.map((match) => {
+                  const idValidation = validateMatchIdentifiers(match);
                   const isFav = favoriteMatchIds ? favoriteMatchIds.includes(match.id) : internalFavs.has(match.id);
                   const isLive = match.status === 'LIVE';
                   const isFinished = match.status === 'FINISHED';
@@ -192,7 +194,7 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                   // 12-hour Colombia kickoff time (e.g. "2:00 PM", "7:30 PM")
                   const time12h = formatColombia12h(match.kickoffTime);
 
-                  const hasRealOdds = Boolean(match.odds?.hasRealOdds && match.odds.home > 0);
+                  const hasRealOdds = Boolean(idValidation.isValid && match.odds?.hasRealOdds && match.odds.home > 0);
                   const betano = match.odds?.betano;
                   const betplay = match.odds?.betplay;
 
@@ -350,10 +352,17 @@ export const CompactLeagueMatchList: React.FC<CompactLeagueMatchListProps> = ({
                         </div>
 
                         {/* Status / PREVIEW badge with light blue styling */}
-                        {!isLive && !isFinished && (
-                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#0c1f38] border border-sky-500/40 rounded text-[10px] font-mono font-bold text-sky-300 group-hover:border-sky-400/60 transition-colors">
-                            PREVIEW
+                        {!idValidation.isValid ? (
+                          <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-[10px] font-mono font-bold text-slate-400">
+                            {UNAVAILABLE_DATA_MESSAGE}
                           </div>
+                        ) : (
+                          !isLive &&
+                          !isFinished && (
+                            <div className="hidden sm:block shrink-0 px-2 py-0.5 bg-[#0c1f38] border border-sky-500/40 rounded text-[10px] font-mono font-bold text-sky-300 group-hover:border-sky-400/60 transition-colors">
+                              PREVIEW
+                            </div>
+                          )
                         )}
                       </div>
 

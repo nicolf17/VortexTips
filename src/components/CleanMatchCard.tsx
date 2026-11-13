@@ -4,6 +4,7 @@ import { ChevronRight, ShieldAlert, BarChart3, Percent } from 'lucide-react';
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { formatColombia12h } from '../utils/dateUtils';
 import { getLocalizedTeamName, getLocalizedShortTeamName } from '../utils/localization';
+import { UNAVAILABLE_DATA_MESSAGE, validateMatchIdentifiers } from '../services/api';
 
 interface CleanMatchCardProps {
   match: Match;
@@ -28,6 +29,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
 
   const isLive = match.status === 'LIVE';
   const isFinished = match.status === 'FINISHED';
+  const idValidation = validateMatchIdentifiers(match);
 
   const leagueMeta = getLeagueMeta(match.league, match.leagueCode);
   const homeTeamName = getLocalizedTeamName(match.homeTeam.name);
@@ -39,7 +41,7 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
   const betano = match.odds?.betano;
   const betplay = match.odds?.betplay;
 
-  const referee = match.refereeInfo;
+  const referee = idValidation.isValid ? match.refereeInfo : undefined;
   const kickoffTime = formatColombia12h(match.kickoffTime || '');
 
   const homeAvg =
@@ -68,8 +70,8 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
   const awayProb =
     awayAvg !== 'N/D' ? Math.min(95, Math.max(5, Math.round((1 / parseFloat(awayAvg)) * 100))) : null;
 
-  const homeForm = match.homeTeam?.stats?.form || [];
-  const awayForm = match.awayTeam?.stats?.form || [];
+  const homeForm = idValidation.isValid ? match.homeTeam?.stats?.form || [] : [];
+  const awayForm = idValidation.isValid ? match.awayTeam?.stats?.form || [] : [];
 
   return (
     <div
@@ -130,22 +132,28 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
             </h4>
             <div className="flex items-center gap-1 mt-1">
               <span className="text-[10px] text-slate-400 font-medium">Forma:</span>
-              <div className="flex gap-0.5">
-                {homeForm.slice(0, 4).map((f, i) => (
-                  <span
-                    key={i}
-                    className={`w-3.5 h-3.5 rounded text-[8px] font-bold flex items-center justify-center text-white ${
-                      f === 'W'
-                        ? 'bg-emerald-600'
-                        : f === 'D'
-                        ? 'bg-amber-600'
-                        : 'bg-rose-600'
-                    }`}
-                  >
-                    {f === 'W' ? 'V' : f === 'D' ? 'E' : 'D'}
-                  </span>
-                ))}
-              </div>
+              {homeForm.length > 0 ? (
+                <div className="flex gap-0.5">
+                  {homeForm.slice(0, 4).map((f, i) => (
+                    <span
+                      key={i}
+                      className={`w-3.5 h-3.5 rounded text-[8px] font-bold flex items-center justify-center text-white ${
+                        f === 'W'
+                          ? 'bg-emerald-600'
+                          : f === 'D'
+                          ? 'bg-amber-600'
+                          : 'bg-rose-600'
+                      }`}
+                    >
+                      {f === 'W' ? 'V' : f === 'D' ? 'E' : 'D'}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-[10px] font-mono text-slate-500">
+                  {UNAVAILABLE_DATA_MESSAGE}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -170,22 +178,28 @@ export const CleanMatchCard: React.FC<CleanMatchCardProps> = ({
               {awayTeamName}
             </h4>
             <div className="flex items-center justify-end gap-1 mt-1">
-              <div className="flex gap-0.5">
-                {awayForm.slice(0, 4).map((f, i) => (
-                  <span
-                    key={i}
-                    className={`w-3.5 h-3.5 rounded text-[8px] font-bold flex items-center justify-center text-white ${
-                      f === 'W'
-                        ? 'bg-emerald-600'
-                        : f === 'D'
-                        ? 'bg-amber-600'
-                        : 'bg-rose-600'
-                    }`}
-                  >
-                    {f === 'W' ? 'V' : f === 'D' ? 'E' : 'D'}
-                  </span>
-                ))}
-              </div>
+              {awayForm.length > 0 ? (
+                <div className="flex gap-0.5">
+                  {awayForm.slice(0, 4).map((f, i) => (
+                    <span
+                      key={i}
+                      className={`w-3.5 h-3.5 rounded text-[8px] font-bold flex items-center justify-center text-white ${
+                        f === 'W'
+                          ? 'bg-emerald-600'
+                          : f === 'D'
+                          ? 'bg-amber-600'
+                          : 'bg-rose-600'
+                      }`}
+                    >
+                      {f === 'W' ? 'V' : f === 'D' ? 'E' : 'D'}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-[10px] font-mono text-slate-500">
+                  {UNAVAILABLE_DATA_MESSAGE}
+                </span>
+              )}
               <span className="text-[10px] text-slate-400 font-medium">Forma</span>
             </div>
           </div>

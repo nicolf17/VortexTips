@@ -4,7 +4,12 @@ import { Match, ValidationStatus, VerifiedMatchDossier } from '../types/football
 import { getLeagueMeta } from '../utils/leagueUtils';
 import { getDynamicDaysCarousel, getTodayTabInfo, formatColombia12h } from '../utils/dateUtils';
 import { getLocalizedTeamName, getLocalizedMarketText } from '../utils/localization';
-import { fetchRadarDossiers } from '../services/api';
+import {
+  fetchRadarDossiers,
+  UNAVAILABLE_DATA_MESSAGE,
+  validateAndSanitizeDossier,
+  validateMatchIdentifiers,
+} from '../services/api';
 import { CountryFlag } from './CountryFlag';
 
 interface DayRadarBannerProps {
@@ -82,14 +87,17 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
     };
 
     const sortedPool = [...basePool].sort((a, b) => {
-      // Prefer matches that have real odds published + real leagueSlug
+      // Prefer matches with valid identifiers, real odds, and real leagueSlug
+      const validA = validateMatchIdentifiers(a).isValid ? 0 : 1;
+      const validB = validateMatchIdentifiers(b).isValid ? 0 : 1;
+      if (validA !== validB) return validA - validB;
       const oddsA = a.odds?.hasRealOdds ? 0 : 1;
       const oddsB = b.odds?.hasRealOdds ? 0 : 1;
       if (oddsA !== oddsB) return oddsA - oddsB;
       const prioA = leaguePriority[a.leagueCode] || 99;
       const prioB = leaguePriority[b.leagueCode] || 99;
       if (prioA !== prioB) return prioA - prioB;
-      return a.id.localeCompare(b.id);
+      return (a.id || '').localeCompare(b.id || '');
     });
 
     const chosen: Match[] = [];
@@ -104,18 +112,20 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
   const fetchableSignature = useMemo(
     () =>
       selectedMatches
-        .filter((m) => Boolean(m.leagueSlug))
-        .map((m) => `${m.leagueSlug}:${m.id}`)
+        .filter((m) => Boolean(m.leagueSlug) && validateMatchIdentifiers(m).isValid)
+        .map((m) => `${m.leagueSlug}:${m.id}:${m.homeTeam?.id || ''}:${m.awayTeam?.id || ''}:${m.dateKey || ''}`)
         .join('|'),
     [selectedMatches]
   );
 
-  // Fetch verified dossiers for the selected 4 matches (only when match IDs signature actually changes)
+  // Fetch verified dossiers for the selected 4 matches (only when valid match identifiers signature changes)
   useEffect(() => {
     if (!fetchableSignature) return;
     if (fetchedBatchKeysRef.current.has(fetchableSignature)) return;
 
-    const fetchable = selectedMatches.filter((m) => Boolean(m.leagueSlug));
+    const fetchable = selectedMatches.filter(
+      (m) => Boolean(m.leagueSlug) && validateMatchIdentifiers(m).isValid
+    );
     if (fetchable.length === 0) return;
 
     fetchedBatchKeysRef.current.add(fetchableSignature);
@@ -142,11 +152,44 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
 
   const top4Picks: RadarPick[] = useMemo(() => {
     return selectedMatches.map((m) => {
-      const dossier = dossiersMap[m.id] || m.verifiedDossier;
+      const idCheck = validateMatchIdentifiers(m);
+      const rawDossier = dossiersMap[m.id] || m.verifiedDossier;
+      const dossierCheck = idCheck.isValid
+        ? validateAndSanitizeDossier(m, rawDossier)
+        : { valid: false, dossier: null, validation: idCheck };
+      const dossier = dossierCheck.valid ? dossierCheck.dossier : null;
+
       const leagueMeta = getLeagueMeta(m.league, m.leagueCode);
       const homeTeamName = getLocalizedTeamName(m.homeTeam.name);
       const awayTeamName = getLocalizedTeamName(m.awayTeam.name);
       const time12h = formatColombia12h(m.kickoffTime);
+
+      if (!idCheck.isValid) {
+        return {
+          id: `radar-pick-${m.id}`,
+          matchId: m.id,
+          match: m,
+          teams: `${homeTeamName} vs ${awayTeamName}`,
+          leagueName: leagueMeta.shortName,
+          leagueCode: m.leagueCode,
+          country: leagueMeta.country,
+          leagueIcon: leagueMeta.icon,
+          marketName: UNAVAILABLE_DATA_MESSAGE,
+          marketCategory: UNAVAILABLE_DATA_MESSAGE,
+          betanoOdd: null,
+          betplayOdd: null,
+          averageOdd: null,
+          fairOdd: null,
+          evPercent: null,
+          impliedProb: null,
+          keyContext: `${UNAVAILABLE_DATA_MESSAGE}: faltan identificadores o fecha coherente.`,
+          rationale: `${UNAVAILABLE_DATA_MESSAGE} (${idCheck.reasons.join(', ')}).`,
+          refereeInsight: `Árbitro: ${UNAVAILABLE_DATA_MESSAGE}`,
+          validationStatus: 'NO DISPONIBLE',
+          sourceSummary: 'Validación de identidad',
+          statusText: `🇨🇴 ${time12h}`,
+        };
+      }
 
       if (!dossier) {
         const hasRealOdds = Boolean(m.odds?.hasRealOdds && m.odds.home > 0);
@@ -161,24 +204,23 @@ export const DayRadarBanner: React.FC<DayRadarBannerProps> = ({
           leagueIcon: leagueMeta.icon,
           marketName: isLoadingDossiers
             ? 'Verificando datos oficiales...'
-            : 'Pendiente de verificación completa',
-          marketCategory: 'Auditoría de Fuentes',
+            : UNAVAILABLE_DATA_MESSAGE,
+          marketCategory: isLoadingDossiers ? 'Auditoría de Fuentes' : UNAVAILABLE_DATA_MESSAGE,
           betanoOdd: hasRealOdds ? (m.odds?.betano?.home ?? m.odds.home) : null,
           betplayOdd: hasRealOdds ? (m.odds?.betplay?.home ?? m.odds.home) : null,
           averageOdd: hasRealOdds ? m.odds.home : null,
           fairOdd: null,
           evPercent: null,
           impliedProb: null,
-          keyContext: m.leagueSlug
-            ? 'Consultando historial ID, H2H, árbitro y bajas...'
-            : 'Partido de demostración sin feed en vivo conectado.',
+          keyContext:
+            isLoadingDossiers && m.leagueSlug
+              ? 'Validando eventId, IDs de equipo, fecha, H2H y estadísticas...'
+              : `${UNAVAILABLE_DATA_MESSAGE} para H2H y estadísticas.`,
           rationale: isLoadingDossiers
             ? 'Validando últimos partidos oficiales, enfrentamientos directos y designación arbitral antes de emitir proyección.'
-            : 'Haz clic en "Ver Análisis Estadístico" para consultar y validar las fuentes de este encuentro.',
-          refereeInsight: m.refereeInfo?.name
-            ? `Árbitro: ${m.refereeInfo.name} (${m.refereeInfo.state === 'VERIFIED' ? 'Verificado' : 'Por verificar'})`
-            : 'Árbitro: Pendiente de consulta de fuentes',
-          validationStatus: isLoadingDossiers ? 'CARGANDO' : 'NO VERIFICADO',
+            : `${UNAVAILABLE_DATA_MESSAGE}: no fue posible validar de forma coherente los datos de este encuentro.`,
+          refereeInsight: `Árbitro: ${isLoadingDossiers ? 'Verificando fuentes...' : UNAVAILABLE_DATA_MESSAGE}`,
+          validationStatus: isLoadingDossiers ? 'CARGANDO' : 'NO DISPONIBLE',
           sourceSummary: 'ESPN API • FotMob API',
           statusText: `🇨🇴 ${time12h}`,
         };
