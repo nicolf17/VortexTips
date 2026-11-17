@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { PLAYERS_DATA } from '../data/mockMatches';
 import { BetSelection } from '../types/football';
-import { getLocalizedTeamName } from '../utils/localization';
 import { Target, Star, Flame, Trophy, Plus, Check } from 'lucide-react';
 
 interface PropsRadarModuleProps {
@@ -31,7 +30,7 @@ export const PropsRadarModule: React.FC<PropsRadarModuleProps> = ({
     onToggleSelection({
       id: `prop-${player.id}`,
       matchId: player.id,
-      matchTitle: `${player.name} (${getLocalizedTeamName(player.team)})`,
+      matchTitle: `${player.name} (${player.team})`,
       league: player.league,
       marketName: 'Player Prop - Remates a Puerta',
       selectionName: `${player.name}: Más de 1.5 Tiros`,
@@ -101,7 +100,7 @@ export const PropsRadarModule: React.FC<PropsRadarModuleProps> = ({
                   <div className="min-w-0 flex-1">
                     <h4 className="font-extrabold text-white text-base truncate">{player.name}</h4>
                     <div className="text-xs text-sky-300 truncate">
-                      {getLocalizedTeamName(player.team)} • #{player.number} • {player.position}
+                      {player.team} • #{player.number} • {player.position}
                     </div>
                   </div>
                 </div>

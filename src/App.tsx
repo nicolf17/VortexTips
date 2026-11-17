@@ -16,7 +16,6 @@ import { PropsRadarModule } from './components/PropsRadarModule';
 import { Footer } from './components/Footer';
 import { getTodayTabInfo, getDynamicDaysCarousel, getColombiaCurrentTimeStr } from './utils/dateUtils';
 import { getLeagueMeta } from './utils/leagueUtils';
-import { matchesTeamSearchQuery } from './utils/localization';
 import { CountryFlag } from './components/CountryFlag';
 import {
   Trophy,
@@ -30,10 +29,21 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const todayInfo = useMemo(() => getTodayTabInfo(), []);
-  const carouselDays = useMemo(() => getDynamicDaysCarousel(), []);
+  const todayInfo = getTodayTabInfo();
+  const carouselDays = getDynamicDaysCarousel();
 
   const [activeModule, setActiveModule] = useState<string>('partidos');
+  const [isNavigating, setIsNavigating] = useState<boolean>(false);
+
+  const handleModuleChange = (modName: string) => {
+    if (modName === activeModule) return;
+    setIsNavigating(true);
+    setTimeout(() => {
+      setActiveModule(modName);
+      setIsNavigating(false);
+    }, 280);
+  };
+
   const [selectedDate, setSelectedDate] = useState<string>(todayInfo.label);
   const [selectedLeague, setSelectedLeague] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'LIVE' | 'FAVORITES'>('ALL');
@@ -267,20 +277,21 @@ export default function App() {
         }
       }
 
-      // 4. Search Query filter (matches both original ESPN names and Spanish localized names)
+      // 4. Search Query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const meta = getLeagueMeta(m.league, m.leagueCode);
+        const home = m.homeTeam?.name?.toLowerCase() || '';
+        const away = m.awayTeam?.name?.toLowerCase() || '';
+        const homeShort = m.homeTeam?.shortName?.toLowerCase() || '';
+        const awayShort = m.awayTeam?.shortName?.toLowerCase() || '';
         const league = m.league?.toLowerCase() || '';
-        const leagueLoc = meta.name?.toLowerCase() || '';
         const referee = m.refereeInfo?.name?.toLowerCase() || '';
-        const homeMatch = matchesTeamSearchQuery(m.homeTeam?.name, searchQuery, m.homeTeam?.shortName);
-        const awayMatch = matchesTeamSearchQuery(m.awayTeam?.name, searchQuery, m.awayTeam?.shortName);
         if (
-          !homeMatch &&
-          !awayMatch &&
+          !home.includes(q) &&
+          !away.includes(q) &&
+          !homeShort.includes(q) &&
+          !awayShort.includes(q) &&
           !league.includes(q) &&
-          !leagueLoc.includes(q) &&
           !referee.includes(q)
         ) {
           return false;
@@ -292,10 +303,17 @@ export default function App() {
   }, [matches, selectedDate, currentSelectedDayObj, selectedStatus, selectedLeague, searchQuery, carouselDays]);
 
   return (
-    <div className="min-h-screen bg-[#080D18] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-sky-500/30 selection:text-sky-200">
+    <div className="min-h-screen bg-[#080D18] text-slate-100 flex flex-col pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden selection:bg-sky-500/30 selection:text-sky-200 relative">
+      {isNavigating && (
+        <div className="fixed inset-0 z-50 bg-[#080D18]/90 backdrop-blur-md flex flex-col items-center justify-center gap-3 text-sky-200">
+          <div className="w-10 h-10 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-bold tracking-tight">Cargando módulo...</span>
+        </div>
+      )}
+
       {/* Top Header: VortexTips, Live COT clock & Quick Search */}
       <Header
-        onOpenSearch={() => setActiveModule('buscador')}
+        onOpenSearch={() => handleModuleChange('buscador')}
         onRefreshData={() => loadMatches(selectedDate)}
         isRefreshing={isLoadingMatches}
         onResetToHome={handleResetToHome}
@@ -594,7 +612,7 @@ export default function App() {
         countsByLeague={countsByLeague}
         totalMatchesCount={matches.length}
         liveMatchesCount={counts.live}
-        onNavigateToMatches={() => setActiveModule('partidos')}
+        onNavigateToMatches={() => handleModuleChange('partidos')}
         favoriteLeagues={favoriteLeagues}
         onToggleFavoriteLeague={handleToggleFavoriteLeague}
       />
@@ -616,7 +634,7 @@ export default function App() {
       {/* Mobile Bottom Navigation (Strictly Analytical, No Bet Slips) */}
       <MobileNav
         activeModule={activeModule}
-        setActiveModule={setActiveModule}
+        setActiveModule={handleModuleChange}
         liveCount={counts.live}
         onOpenCompetitionsModal={() => setIsCompetitionsModalOpen(true)}
       />
